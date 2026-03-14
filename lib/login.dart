@@ -28,17 +28,26 @@ class _LoginScreenState extends State<LoginScreen> {
       await Future.delayed(const Duration(seconds: 2));
       setState(() => _isLoading = false);
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Login realizado com sucesso!')),
-        );
+        _showAlert('Login realizado com sucesso!');
       }
     }
   }
 
   void _forgotPassword() {
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(
-        content: Text('Instruções de recuperação de senha enviadas!'),
+    _showAlert('Instruções de recuperação de senha enviadas!');
+  }
+
+  Future<void> _showAlert(String message) async {
+    return showDialog<void>(
+      context: context,
+      builder: (context) => AlertDialog(
+        content: Text(message),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(context).pop(),
+            child: const Text('OK'),
+          ),
+        ],
       ),
     );
   }
@@ -295,21 +304,25 @@ class _LoginScreenState extends State<LoginScreen> {
                             GestureDetector(
                               onTap: () async {
                                 final Uri url = Uri.parse('https://t.me/selds');
+
+                                // Ensure widget is still mounted before awaiting async operations.
+                                if (!mounted) return;
+
+                                final messenger = ScaffoldMessenger.of(context);
+
                                 if (await canLaunchUrl(url)) {
                                   await launchUrl(
                                     url,
                                     mode: LaunchMode.externalApplication,
                                   );
                                 } else {
-                                  if (mounted) {
-                                    ScaffoldMessenger.of(context).showSnackBar(
-                                      const SnackBar(
-                                        content: Text(
-                                          'Não foi possível abrir o Telegram',
-                                        ),
+                                  messenger.showSnackBar(
+                                    const SnackBar(
+                                      content: Text(
+                                        'Não foi possível abrir o Telegram',
                                       ),
-                                    );
-                                  }
+                                    ),
+                                  );
                                 }
                               },
                               child: Row(
