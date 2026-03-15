@@ -1,6 +1,6 @@
 # ADL Fonoaudiologia
 
-Um aplicativo Flutter para gerenciamento de fichas de pacientes em fonoaudiologia, desenvolvido para a ADL Fonoaudiologia.
+Um aplicativo Flutter para gerenciamento de fichas de pacientes em fonoaudiologia, desenvolvido para a Fonoaudiologia.
 
 ## Descrição
 
