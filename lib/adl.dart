@@ -124,6 +124,7 @@ class _FichaPacientePageState extends State<FichaPacientePage> {
     }
 
     final ficha = PacienteFicha(
+      id: _pacienteId,
       nomeCrianca: nome,
       dataNascimento: _dataNascController.text.trim(),
       sexo: _selectedSexo?.trim() ?? '',
@@ -159,7 +160,7 @@ class _FichaPacientePageState extends State<FichaPacientePage> {
       return;
     }
 
-    FichaRepository.add(ficha);
+    await FichaRepository.add(ficha);
 
     await _showAlert('Ficha salva no histórico.');
 

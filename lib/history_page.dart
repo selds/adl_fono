@@ -120,13 +120,18 @@ class _HistoryPageState extends State<HistoryPage> {
                         icon: const Icon(Icons.edit),
                         onPressed: () {
                           Navigator.of(context).pop();
-                          Navigator.of(context).pushNamed(
-                            '/adl',
-                            arguments: {
-                              'pacienteId': pacienteId,
-                              'protocolId': protocol.id,
-                            },
-                          );
+                          Navigator.of(context)
+                              .pushNamed(
+                                '/adl',
+                                arguments: {
+                                  'pacienteId': pacienteId,
+                                  'protocolId': protocol.id,
+                                },
+                              )
+                              .then((_) {
+                                if (!mounted) return;
+                                setState(() {});
+                              });
                         },
                       ),
                     );
@@ -141,9 +146,12 @@ class _HistoryPageState extends State<HistoryPage> {
           ElevatedButton(
             onPressed: () {
               Navigator.of(context).pop();
-              Navigator.of(
-                context,
-              ).pushNamed('/adl', arguments: {'pacienteId': pacienteId});
+              Navigator.of(context)
+                  .pushNamed('/adl', arguments: {'pacienteId': pacienteId})
+                  .then((_) {
+                    if (!mounted) return;
+                    setState(() {});
+                  });
             },
             child: const Text('Novo protocolo'),
           ),

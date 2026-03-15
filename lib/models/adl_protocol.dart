@@ -7,10 +7,7 @@ class AdlProtocol {
     String? id,
     required this.pacienteId,
     required this.receptiveAnswers,
-    required this.produzSons,
-    required this.vocabulario,
-    required this.comunicacaoNaoVerbal,
-    required this.imitaPalavra,
+    required this.expressiveAnswers,
     DateTime? createdAt,
   }) : id = id ?? const Uuid().v4(),
        createdAt = createdAt ?? DateTime.now();
@@ -18,20 +15,14 @@ class AdlProtocol {
   final String id;
   final String pacienteId;
   final Map<String, dynamic> receptiveAnswers;
-  final String produzSons;
-  final String vocabulario;
-  final String comunicacaoNaoVerbal;
-  final String imitaPalavra;
+  final Map<String, dynamic> expressiveAnswers;
   final DateTime createdAt;
 
   Map<String, dynamic> toJson() => {
     'id': id,
     'pacienteId': pacienteId,
     'receptiveAnswers': receptiveAnswers,
-    'produzSons': produzSons,
-    'vocabulario': vocabulario,
-    'comunicacaoNaoVerbal': comunicacaoNaoVerbal,
-    'imitaPalavra': imitaPalavra,
+    'expressiveAnswers': expressiveAnswers,
     'createdAt': createdAt.toIso8601String(),
   };
 
@@ -41,12 +32,31 @@ class AdlProtocol {
     receptiveAnswers: Map<String, dynamic>.from(
       (json['receptiveAnswers'] as Map?) ?? {},
     ),
-    produzSons: json['produzSons'] as String? ?? '',
-    vocabulario: json['vocabulario'] as String? ?? '',
-    comunicacaoNaoVerbal: json['comunicacaoNaoVerbal'] as String? ?? '',
-    imitaPalavra: json['imitaPalavra'] as String? ?? '',
+    expressiveAnswers: _parseExpressiveAnswers(json),
     createdAt: DateTime.parse(json['createdAt']),
   );
+
+  static Map<String, dynamic> _parseExpressiveAnswers(
+    Map<String, dynamic> json,
+  ) {
+    final fromMap = Map<String, dynamic>.from(
+      (json['expressiveAnswers'] as Map?) ?? {},
+    );
+
+    if (fromMap.isNotEmpty) return fromMap;
+
+    // Retrocompatibilidade com o formato antigo.
+    return {
+      'q1Score': '',
+      'q1Text': json['produzSons'] as String? ?? '',
+      'q2Score': '',
+      'q2Text': json['vocabulario'] as String? ?? '',
+      'q3Score': '',
+      'q3Text': json['comunicacaoNaoVerbal'] as String? ?? '',
+      'q4Score': '',
+      'q4Text': json['imitaPalavra'] as String? ?? '',
+    };
+  }
 }
 
 class AdlProtocolRepository {

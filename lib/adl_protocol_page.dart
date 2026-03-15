@@ -28,11 +28,15 @@ class _AdlProtocolPageState extends State<AdlProtocolPage> {
   // Q8 sub-respostas
   bool? _q8a, _q8b, _q8c;
 
-  // EXPRESSIVA
-  late final TextEditingController _produzSons;
-  late final TextEditingController _vocabulario;
-  late final TextEditingController _comunicacaoNaoVerbal;
-  late final TextEditingController _imitaPalavra;
+  // EXPRESSIVA - campos de digitacao por questao
+  late final TextEditingController _q1ExpScore;
+  late final TextEditingController _q1ExpText;
+  late final TextEditingController _q2ExpScore;
+  late final TextEditingController _q2ExpText;
+  late final TextEditingController _q3ExpScore;
+  late final TextEditingController _q3ExpText;
+  late final TextEditingController _q4ExpScore;
+  late final TextEditingController _q4ExpText;
 
   final _formKey = GlobalKey<FormState>();
 
@@ -40,7 +44,7 @@ class _AdlProtocolPageState extends State<AdlProtocolPage> {
   void initState() {
     super.initState();
     final r = widget.protocol?.receptiveAnswers ?? {};
-    final p = widget.protocol;
+    final e = widget.protocol?.expressiveAnswers ?? {};
 
     _q5Score = TextEditingController(text: r['q5Score'] as String? ?? '');
     _q5a = r['q5a'] as bool?;
@@ -69,11 +73,16 @@ class _AdlProtocolPageState extends State<AdlProtocolPage> {
     _q8b = r['q8b'] as bool?;
     _q8c = r['q8c'] as bool?;
 
-    _produzSons = TextEditingController(text: p?.produzSons ?? '');
-    _vocabulario = TextEditingController(text: p?.vocabulario ?? '');
-    _comunicacaoNaoVerbal =
-        TextEditingController(text: p?.comunicacaoNaoVerbal ?? '');
-    _imitaPalavra = TextEditingController(text: p?.imitaPalavra ?? '');
+    _q1ExpScore = TextEditingController(text: e['q1Score'] as String? ?? '');
+    _q1ExpText = TextEditingController(text: e['q1Text'] as String? ?? '');
+    _q2ExpScore = TextEditingController(text: e['q2Score'] as String? ?? '');
+    _q2ExpText = TextEditingController(text: e['q2Text'] as String? ?? '');
+    _q3ExpScore = TextEditingController(text: e['q3Score'] as String? ?? '');
+    _q3ExpText = TextEditingController(text: e['q3Text'] as String? ?? '');
+    _q4ExpScore = TextEditingController(text: e['q4Score'] as String? ?? '');
+    _q4ExpText = TextEditingController(text: e['q4Text'] as String? ?? '');
+
+    _updateReceptivaScores();
   }
 
   @override
@@ -82,10 +91,14 @@ class _AdlProtocolPageState extends State<AdlProtocolPage> {
     _q6Score.dispose();
     _q7Score.dispose();
     _q8Score.dispose();
-    _produzSons.dispose();
-    _vocabulario.dispose();
-    _comunicacaoNaoVerbal.dispose();
-    _imitaPalavra.dispose();
+    _q1ExpScore.dispose();
+    _q1ExpText.dispose();
+    _q2ExpScore.dispose();
+    _q2ExpText.dispose();
+    _q3ExpScore.dispose();
+    _q3ExpText.dispose();
+    _q4ExpScore.dispose();
+    _q4ExpText.dispose();
     super.dispose();
   }
 
@@ -118,13 +131,21 @@ class _AdlProtocolPageState extends State<AdlProtocolPage> {
       'q8c': _q8c,
     };
 
+    final expressiveAnswers = {
+      'q1Score': _q1ExpScore.text.trim(),
+      'q1Text': _q1ExpText.text.trim(),
+      'q2Score': _q2ExpScore.text.trim(),
+      'q2Text': _q2ExpText.text.trim(),
+      'q3Score': _q3ExpScore.text.trim(),
+      'q3Text': _q3ExpText.text.trim(),
+      'q4Score': _q4ExpScore.text.trim(),
+      'q4Text': _q4ExpText.text.trim(),
+    };
+
     final protocol = AdlProtocol(
       pacienteId: widget.pacienteId,
       receptiveAnswers: receptiveAnswers,
-      produzSons: _produzSons.text.trim(),
-      vocabulario: _vocabulario.text.trim(),
-      comunicacaoNaoVerbal: _comunicacaoNaoVerbal.text.trim(),
-      imitaPalavra: _imitaPalavra.text.trim(),
+      expressiveAnswers: expressiveAnswers,
       id: widget.protocol?.id,
       createdAt: widget.protocol?.createdAt,
     );
@@ -144,12 +165,67 @@ class _AdlProtocolPageState extends State<AdlProtocolPage> {
 
   // ── helpers de UI ──────────────────────────────────────────────────────────
 
-  Widget _buildScoreField(TextEditingController controller) {
+  int _scoreToInt(String value) {
+    final normalized = value.trim().replaceAll(',', '.');
+    final parsed = double.tryParse(normalized);
+    return parsed?.round() ?? 0;
+  }
+
+  int _countSim(Iterable<bool?> values) {
+    return values.where((v) => v == true).length;
+  }
+
+  int _scoreByThreshold({required int acertos, required int minAcertos}) {
+    return acertos >= minAcertos ? 1 : 0;
+  }
+
+  void _updateReceptivaScores() {
+    _q5Score.text = _scoreByThreshold(
+      acertos: _countSim([_q5a, _q5b, _q5c]),
+      minAcertos: 2,
+    ).toString();
+
+    _q6Score.text = _scoreByThreshold(
+      acertos: _countSim([_q6a, _q6b, _q6c, _q6d, _q6e, _q6f]),
+      minAcertos: 4,
+    ).toString();
+
+    _q7Score.text = _scoreByThreshold(
+      acertos: _countSim([_q7a, _q7b, _q7c, _q7d, _q7e, _q7f, _q7g]),
+      minAcertos: 4,
+    ).toString();
+
+    _q8Score.text = _scoreByThreshold(
+      acertos: _countSim([_q8a, _q8b, _q8c]),
+      minAcertos: 2,
+    ).toString();
+  }
+
+  int get _expressivaTotal {
+    return _scoreToInt(_q1ExpScore.text) +
+        _scoreToInt(_q2ExpScore.text) +
+        _scoreToInt(_q3ExpScore.text) +
+        _scoreToInt(_q4ExpScore.text);
+  }
+
+  int get _receptivaTotal {
+    return _scoreToInt(_q5Score.text) +
+        _scoreToInt(_q6Score.text) +
+        _scoreToInt(_q7Score.text) +
+        _scoreToInt(_q8Score.text);
+  }
+
+  Widget _buildScoreField(
+    TextEditingController controller, {
+    bool readOnly = false,
+  }) {
     return SizedBox(
       width: 56,
       child: TextFormField(
         controller: controller,
         keyboardType: TextInputType.number,
+        readOnly: readOnly,
+        onChanged: readOnly ? null : (_) => setState(() {}),
         textAlign: TextAlign.center,
         decoration: const InputDecoration(
           hintText: '__',
@@ -165,7 +241,10 @@ class _AdlProtocolPageState extends State<AdlProtocolPage> {
       mainAxisSize: MainAxisSize.min,
       children: [
         GestureDetector(
-          onTap: () => setState(() => onChange(value == true ? null : true)),
+          onTap: () => setState(() {
+            onChange(value == true ? null : true);
+            _updateReceptivaScores();
+          }),
           child: Container(
             width: 34,
             height: 28,
@@ -188,7 +267,10 @@ class _AdlProtocolPageState extends State<AdlProtocolPage> {
           ),
         ),
         GestureDetector(
-          onTap: () => setState(() => onChange(value == false ? null : false)),
+          onTap: () => setState(() {
+            onChange(value == false ? null : false);
+            _updateReceptivaScores();
+          }),
           child: Container(
             width: 34,
             height: 28,
@@ -234,8 +316,58 @@ class _AdlProtocolPageState extends State<AdlProtocolPage> {
   Widget _buildQuestion({
     required String title,
     required TextEditingController score,
+    bool readOnlyScore = false,
     String? description,
     required List<Widget> items,
+    required String scoreInfo,
+  }) {
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 8),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Expanded(
+                child: Text(
+                  title,
+                  style: const TextStyle(
+                    fontWeight: FontWeight.bold,
+                    fontSize: 13,
+                  ),
+                ),
+              ),
+              const SizedBox(width: 8),
+              _buildScoreField(score, readOnly: readOnlyScore),
+            ],
+          ),
+          if (description != null) ...[
+            const SizedBox(height: 4),
+            Text(
+              description,
+              style: const TextStyle(fontSize: 12, fontStyle: FontStyle.italic),
+            ),
+          ],
+          const SizedBox(height: 6),
+          ...items,
+          const SizedBox(height: 4),
+          Text(
+            scoreInfo,
+            style: const TextStyle(fontSize: 12, color: Colors.black54),
+          ),
+          const Divider(height: 20),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildExpressivaQuestion({
+    required String title,
+    required TextEditingController score,
+    String? description,
+    required String inputLabel,
+    required TextEditingController inputController,
     required String scoreInfo,
   }) {
     return Padding(
@@ -267,7 +399,19 @@ class _AdlProtocolPageState extends State<AdlProtocolPage> {
             ),
           ],
           const SizedBox(height: 6),
-          ...items,
+          TextFormField(
+            controller: inputController,
+            decoration: InputDecoration(
+              labelText: inputLabel,
+              border: const OutlineInputBorder(),
+              contentPadding: const EdgeInsets.symmetric(
+                horizontal: 10,
+                vertical: 10,
+              ),
+            ),
+            minLines: 2,
+            maxLines: 5,
+          ),
           const SizedBox(height: 4),
           Text(
             scoreInfo,
@@ -275,28 +419,6 @@ class _AdlProtocolPageState extends State<AdlProtocolPage> {
           ),
           const Divider(height: 20),
         ],
-      ),
-    );
-  }
-
-  Widget _buildExpressivaField(
-    String label,
-    TextEditingController controller,
-  ) {
-    return Padding(
-      padding: const EdgeInsets.only(bottom: 12),
-      child: TextFormField(
-        controller: controller,
-        decoration: InputDecoration(
-          labelText: label,
-          border: const OutlineInputBorder(),
-          contentPadding: const EdgeInsets.symmetric(
-            horizontal: 10,
-            vertical: 10,
-          ),
-        ),
-        minLines: 2,
-        maxLines: 4,
       ),
     );
   }
@@ -348,6 +470,7 @@ class _AdlProtocolPageState extends State<AdlProtocolPage> {
         _buildQuestion(
           title: '5. Compreende ordens simples sem pistas gestuais',
           score: _q5Score,
+          readOnlyScore: true,
           description: 'Ordem: Vamos ver as bolas que estao dentro da bolsa?',
           items: [
             _buildSubItem(
@@ -371,17 +494,14 @@ class _AdlProtocolPageState extends State<AdlProtocolPage> {
         _buildQuestion(
           title: '6. Identifica figuras.',
           score: _q6Score,
+          readOnlyScore: true,
           description:
               'Material: Manual de Figuras, pagina 2.\nOlhe estas figuras. Mostre...',
           items: [
             _buildSubItem('a. a banana', _q6a, (v) => setState(() => _q6a = v)),
             _buildSubItem('b. o pe', _q6b, (v) => setState(() => _q6b = v)),
             _buildSubItem('c. o carro', _q6c, (v) => setState(() => _q6c = v)),
-            _buildSubItem(
-              'd. o sapato',
-              _q6d,
-              (v) => setState(() => _q6d = v),
-            ),
+            _buildSubItem('d. o sapato', _q6d, (v) => setState(() => _q6d = v)),
             _buildSubItem('e. o gato', _q6e, (v) => setState(() => _q6e = v)),
             _buildSubItem('f. a mao', _q6f, (v) => setState(() => _q6f = v)),
           ],
@@ -390,21 +510,14 @@ class _AdlProtocolPageState extends State<AdlProtocolPage> {
         _buildQuestion(
           title: '7. Identifica partes do corpo em si proprio.',
           score: _q7Score,
+          readOnlyScore: true,
           description: 'Mostre o(a) seu(ua)...',
           items: [
-            _buildSubItem(
-              'a. cabelo',
-              _q7a,
-              (v) => setState(() => _q7a = v),
-            ),
+            _buildSubItem('a. cabelo', _q7a, (v) => setState(() => _q7a = v)),
             _buildSubItem('b. olho', _q7b, (v) => setState(() => _q7b = v)),
             _buildSubItem('c. nariz', _q7c, (v) => setState(() => _q7c = v)),
             _buildSubItem('d. pe', _q7d, (v) => setState(() => _q7d = v)),
-            _buildSubItem(
-              'e. orelha',
-              _q7e,
-              (v) => setState(() => _q7e = v),
-            ),
+            _buildSubItem('e. orelha', _q7e, (v) => setState(() => _q7e = v)),
             _buildSubItem('f. mao', _q7f, (v) => setState(() => _q7f = v)),
             _buildSubItem('g. boca', _q7g, (v) => setState(() => _q7g = v)),
           ],
@@ -413,6 +526,7 @@ class _AdlProtocolPageState extends State<AdlProtocolPage> {
         _buildQuestion(
           title: '8. Compreende acoes dentro de um contexto.',
           score: _q8Score,
+          readOnlyScore: true,
           description:
               'Material: um cachorrinho, um pratinho, uma colher e um copo.\n'
               'Ordem: Coloque o material sobre a mesa e fale para a crianca:',
@@ -435,25 +549,104 @@ class _AdlProtocolPageState extends State<AdlProtocolPage> {
           ],
           scoreInfo: '(1 ponto = 2 acertos)',
         ),
+        Container(
+          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+          decoration: BoxDecoration(
+            color: const Color(0xFFEEF2FF),
+            borderRadius: BorderRadius.circular(8),
+            border: Border.all(color: const Color(0xFFCBD5E1)),
+          ),
+          child: Row(
+            children: [
+              const Expanded(
+                child: Text(
+                  'Pontuacao total da linguagem receptiva',
+                  style: TextStyle(fontWeight: FontWeight.w600),
+                ),
+              ),
+              Text(
+                '$_receptivaTotal',
+                style: const TextStyle(
+                  fontSize: 18,
+                  fontWeight: FontWeight.bold,
+                  color: Color(0xFF1E3A8A),
+                ),
+              ),
+            ],
+          ),
+        ),
       ],
     );
 
     final expressivaContent = _buildColumnCard(
       title: 'LINGUAGEM EXPRESSIVA',
       children: [
-        _buildExpressivaField(
-          '1. Produz sons silabicos variados (faz combinacao de sons)',
-          _produzSons,
+        _buildExpressivaQuestion(
+          title: '1. Produz sons silabicos variados (faz combinacao de sons).',
+          score: _q1ExpScore,
+          description:
+              'Observacao realizada em contexto ludico. Escreva os exemplos:',
+          inputLabel: 'Exemplos observados',
+          inputController: _q1ExpText,
+          scoreInfo:
+              '(1 ponto = produz duas silabas ou mais variando os fonemas em uma emissao vocal)',
         ),
-        _buildExpressivaField(
-          '2. Possui vocabulario de pelo menos uma palavra',
-          _vocabulario,
+        _buildExpressivaQuestion(
+          title: '2. Possui vocabulario de pelo menos uma palavra:',
+          score: _q2ExpScore,
+          inputLabel: 'Palavra(s) utilizada(s)',
+          inputController: _q2ExpText,
+          scoreInfo:
+              '(1 ponto = usa consistentemente a mesma combinacao de sons para nomear uma pessoa ou um objeto)',
         ),
-        _buildExpressivaField(
-          '3. Comunica-se de forma nao verbal (gestos, apontar)',
-          _comunicacaoNaoVerbal,
+        _buildExpressivaQuestion(
+          title:
+              '3. Comunica-se de forma nao verbal, usando gestos, chamando atencao para si ou apontando para um objeto ou pessoa.',
+          score: _q3ExpScore,
+          description: 'Descreva o que a crianca faz:',
+          inputLabel: 'Comportamentos observados',
+          inputController: _q3ExpText,
+          scoreInfo:
+              '(1 ponto = se apresenta alguns comportamentos descritos. Ex.: entrega brinquedo, puxa pela mao, aponta etc.)',
         ),
-        _buildExpressivaField('4. Imita uma palavra', _imitaPalavra),
+        _buildExpressivaQuestion(
+          title: '4. Imita uma palavra:',
+          score: _q4ExpScore,
+          description:
+              'Material: bola, carro, miniatura de boneco ou palavras do contexto da crianca como "mamae" e "papai".\n'
+              'A examinadora aponta para o objeto e em seguida nomeia para a crianca, estimulando-a a repetir:\n'
+              'Ex.: Olhe a bola ... bola\n'
+              'Marque as palavras que a crianca repete:',
+          inputLabel: 'Palavras repetidas',
+          inputController: _q4ExpText,
+          scoreInfo: '(1 ponto = repete 1 palavra)',
+        ),
+        Container(
+          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+          decoration: BoxDecoration(
+            color: const Color(0xFFEEF2FF),
+            borderRadius: BorderRadius.circular(8),
+            border: Border.all(color: const Color(0xFFCBD5E1)),
+          ),
+          child: Row(
+            children: [
+              const Expanded(
+                child: Text(
+                  'Pontuacao total da linguagem expressiva',
+                  style: TextStyle(fontWeight: FontWeight.w600),
+                ),
+              ),
+              Text(
+                '$_expressivaTotal',
+                style: const TextStyle(
+                  fontSize: 18,
+                  fontWeight: FontWeight.bold,
+                  color: Color(0xFF1E3A8A),
+                ),
+              ),
+            ],
+          ),
+        ),
       ],
     );
 
