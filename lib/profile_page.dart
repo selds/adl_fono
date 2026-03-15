@@ -5,25 +5,49 @@ class ProfilePage extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(title: const Text('Perfil')),
-      body: Padding(
+    return Dialog(
+      insetPadding: const EdgeInsets.symmetric(horizontal: 24, vertical: 40),
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+      child: Padding(
         padding: const EdgeInsets.all(16),
         child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: const [
-            Text(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                const Text(
+                  'Perfil',
+                  style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
+                ),
+                IconButton(
+                  icon: const Icon(Icons.close),
+                  onPressed: () => Navigator.of(context).pop(),
+                ),
+              ],
+            ),
+            const SizedBox(height: 8),
+            const Text(
               'Perfil do Usuário',
               style: TextStyle(fontSize: 22, fontWeight: FontWeight.bold),
             ),
-            SizedBox(height: 12),
-            Text('Nome: Samuel Garcez'),
-            SizedBox(height: 8),
-            Text('E-mail: exemplo@dominio.com'),
-            SizedBox(height: 16),
-            Text(
+            const SizedBox(height: 12),
+            const Text('Nome: Samuel Garcez'),
+            const SizedBox(height: 8),
+            const Text('E-mail: exemplo@dominio.com'),
+            const SizedBox(height: 16),
+            const Text(
               'Aqui você pode adicionar mais detalhes do perfil do usuário, como foto, senha, etc.',
               style: TextStyle(color: Colors.black54),
+            ),
+            const SizedBox(height: 18),
+            Align(
+              alignment: Alignment.centerRight,
+              child: TextButton(
+                onPressed: () => Navigator.of(context).pop(),
+                child: const Text('Fechar'),
+              ),
             ),
           ],
         ),

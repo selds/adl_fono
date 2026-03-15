@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 
+import 'models/adl_protocol.dart';
 import 'models/paciente_ficha.dart';
 
 class HistoryPage extends StatefulWidget {
@@ -68,11 +69,16 @@ class _HistoryPageState extends State<HistoryPage> {
       ),
     );
 
+    if (!mounted) return false;
+
     return result == true;
   }
 
   Future<void> _removeEntry(PacienteFicha ficha) async {
     await FichaRepository.remove(ficha);
+
+    if (!mounted) return;
+
     setState(() {});
     showDialog<void>(
       context: context,
@@ -83,6 +89,63 @@ class _HistoryPageState extends State<HistoryPage> {
           TextButton(
             onPressed: () => Navigator.of(context).pop(),
             child: const Text('OK'),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Future<void> _showProtocolsForPaciente(String pacienteId, String nome) async {
+    final protocols = AdlProtocolRepository.forPaciente(pacienteId);
+
+    await showDialog<void>(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: Text('Protocolos de $nome'),
+        content: SizedBox(
+          width: double.maxFinite,
+          child: protocols.isEmpty
+              ? const Text('Nenhum protocolo registrado para este paciente.')
+              : ListView.builder(
+                  shrinkWrap: true,
+                  itemCount: protocols.length,
+                  itemBuilder: (context, index) {
+                    final protocol = protocols[index];
+                    return ListTile(
+                      title: Text(protocol.createdAt.toLocal().toString()),
+                      subtitle: Text(
+                        'Data: ${protocol.createdAt.toLocal().toString().substring(0, 10)}',
+                      ),
+                      trailing: IconButton(
+                        icon: const Icon(Icons.edit),
+                        onPressed: () {
+                          Navigator.of(context).pop();
+                          Navigator.of(context).pushNamed(
+                            '/adl',
+                            arguments: {
+                              'pacienteId': pacienteId,
+                              'protocolId': protocol.id,
+                            },
+                          );
+                        },
+                      ),
+                    );
+                  },
+                ),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(context).pop(),
+            child: const Text('Fechar'),
+          ),
+          ElevatedButton(
+            onPressed: () {
+              Navigator.of(context).pop();
+              Navigator.of(
+                context,
+              ).pushNamed('/adl', arguments: {'pacienteId': pacienteId});
+            },
+            child: const Text('Novo protocolo'),
           ),
         ],
       ),
@@ -194,36 +257,57 @@ class _HistoryPageState extends State<HistoryPage> {
                                   },
                                   onDismissed: (_) async =>
                                       await _removeEntry(item),
-                                  child: ListTile(
-                                    title: Text(
-                                      item.dataAvaliacao.isEmpty
-                                          ? 'Sem data'
-                                          : '${item.dataAvaliacao} • ${_formatAge(item.dataNascimento)}',
-                                    ),
-                                    subtitle: Column(
-                                      crossAxisAlignment:
-                                          CrossAxisAlignment.start,
-                                      children: [
-                                        Text(
-                                          'Sexo: ${item.sexo} | Diagnóstico: ${item.diagnostico}',
+                                  child: Builder(
+                                    builder: (context) {
+                                      final protocols =
+                                          AdlProtocolRepository.forPaciente(
+                                            item.id,
+                                          );
+                                      return ListTile(
+                                        title: Text(
+                                          item.dataAvaliacao.isEmpty
+                                              ? 'Sem data'
+                                              : '${item.dataAvaliacao} • ${_formatAge(item.dataNascimento)}',
                                         ),
-                                        Text(
-                                          'Responsável: ${item.responsavel}',
+                                        subtitle: Column(
+                                          crossAxisAlignment:
+                                              CrossAxisAlignment.start,
+                                          children: [
+                                            Text(
+                                              'Sexo: ${item.sexo} | Diagnóstico: ${item.diagnostico}',
+                                            ),
+                                            Text(
+                                              'Responsável: ${item.responsavel}',
+                                            ),
+                                            Text(
+                                              'Avaliador: ${item.avaliador} | Especialidade: ${item.especialidade}',
+                                            ),
+                                            const SizedBox(height: 4),
+                                            Text(
+                                              'Atividades: ${item.atividades}',
+                                            ),
+                                            Text(
+                                              'Ambiente: ${item.ambienteFamiliar}',
+                                            ),
+                                            Text(
+                                              'Demanda: ${item.demandaFamiliar}',
+                                            ),
+                                            const SizedBox(height: 8),
+                                            Text(
+                                              'Protocolos ADL: ${protocols.length}',
+                                              style: const TextStyle(
+                                                fontWeight: FontWeight.w600,
+                                              ),
+                                            ),
+                                          ],
                                         ),
-                                        Text(
-                                          'Avaliador: ${item.avaliador} | Especialidade: ${item.especialidade}',
+                                        isThreeLine: true,
+                                        onTap: () => _showProtocolsForPaciente(
+                                          item.id,
+                                          name,
                                         ),
-                                        const SizedBox(height: 4),
-                                        Text('Atividades: ${item.atividades}'),
-                                        Text(
-                                          'Ambiente: ${item.ambienteFamiliar}',
-                                        ),
-                                        Text(
-                                          'Demanda: ${item.demandaFamiliar}',
-                                        ),
-                                      ],
-                                    ),
-                                    isThreeLine: true,
+                                      );
+                                    },
                                   ),
                                 ),
                               )

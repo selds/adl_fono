@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:intl/intl.dart';
 import 'package:mask_text_input_formatter/mask_text_input_formatter.dart';
+import 'package:uuid/uuid.dart';
 
 import 'models/paciente_ficha.dart';
 import 'profile_page.dart';
@@ -17,6 +18,7 @@ class FichaPacientePage extends StatefulWidget {
 }
 
 class _FichaPacientePageState extends State<FichaPacientePage> {
+  late final String _pacienteId;
   final TextEditingController _nomeCriancaController = TextEditingController();
   final TextEditingController _dataNascController = TextEditingController();
   String? _selectedSexo;
@@ -48,7 +50,10 @@ class _FichaPacientePageState extends State<FichaPacientePage> {
   @override
   void initState() {
     super.initState();
+
     final initial = widget.initialFicha;
+    _pacienteId = initial?.id ?? const Uuid().v4();
+
     if (initial != null) {
       _nomeCriancaController.text = initial.nomeCrianca;
       _dataNascController.text = initial.dataNascimento;
@@ -134,6 +139,7 @@ class _FichaPacientePageState extends State<FichaPacientePage> {
 
     if (widget.onSave != null && widget.initialFicha != null) {
       final updatedFicha = PacienteFicha(
+        id: _pacienteId,
         nomeCrianca: ficha.nomeCrianca,
         dataNascimento: ficha.dataNascimento,
         sexo: ficha.sexo,
@@ -156,6 +162,13 @@ class _FichaPacientePageState extends State<FichaPacientePage> {
     FichaRepository.add(ficha);
 
     await _showAlert('Ficha salva no histórico.');
+
+    // Após salvar a ficha, vá para o formulário de Protocolo ADL para este paciente.
+    if (!mounted) return;
+    Navigator.of(
+      context,
+    ).pushNamed('/adl', arguments: {'pacienteId': _pacienteId});
+
     _clearForm();
   }
 
@@ -273,17 +286,27 @@ class _FichaPacientePageState extends State<FichaPacientePage> {
                     Navigator.of(context).pushNamed('/history');
                     break;
                   case 'settings':
-                    _showAlert('Abrir configurações...');
+                    _showAlert('Em construção...');
                     break;
                   case 'help':
-                    _showAlert('Abrir ajuda...');
+                    _showAlert('Em construção...');
+                    break;
+                  case 'adl':
+                    Navigator.of(
+                      context,
+                    ).pushNamed('/adl', arguments: {'pacienteId': _pacienteId});
+                    break;
+                  case 'exit':
+                    Navigator.of(context).pushNamed('/login');
                     break;
                 }
               },
               itemBuilder: (context) => const [
                 PopupMenuItem(value: 'history', child: Text('Histórico')),
+                PopupMenuItem(value: 'adl', child: Text('Protocolo ADL')),
                 PopupMenuItem(value: 'settings', child: Text('Configurações')),
                 PopupMenuItem(value: 'help', child: Text('Ajuda')),
+                PopupMenuItem(value: 'exit', child: Text('Sair')),
               ],
             ),
             const SizedBox(width: 8),
@@ -295,9 +318,10 @@ class _FichaPacientePageState extends State<FichaPacientePage> {
             icon: const Icon(Icons.person),
             tooltip: 'Perfil',
             onPressed: () {
-              Navigator.of(
-                context,
-              ).push(MaterialPageRoute(builder: (_) => const ProfilePage()));
+              showDialog<void>(
+                context: context,
+                builder: (context) => const ProfilePage(),
+              );
             },
           ),
         ],

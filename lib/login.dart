@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'dart:ui';
 import 'package:url_launcher/url_launcher.dart';
+import 'package:adl_fono/home_page.dart';
 
 class LoginScreen extends StatefulWidget {
   const LoginScreen({super.key});
@@ -10,6 +11,9 @@ class LoginScreen extends StatefulWidget {
 }
 
 class _LoginScreenState extends State<LoginScreen> {
+  static const _adminUser = 'admin';
+  static const _adminPassword = 'admin123';
+
   final _formKey = GlobalKey<FormState>();
   final _emailController = TextEditingController();
   final _passwordController = TextEditingController();
@@ -27,8 +31,28 @@ class _LoginScreenState extends State<LoginScreen> {
       setState(() => _isLoading = true);
       await Future.delayed(const Duration(seconds: 2));
       setState(() => _isLoading = false);
-      if (mounted) {
-        _showAlert('Login realizado com sucesso!');
+
+      if (!mounted) return;
+
+      final email = _emailController.text.trim();
+      final password = _passwordController.text;
+
+      if (email == _adminUser && password == _adminPassword) {
+        // Navega para a tela principal e remove a tela de login da pilha
+        Navigator.of(context).pushReplacement(
+          MaterialPageRoute(
+            builder: (_) => const HomePage(
+              userData: {
+                'name': 'Samuel Garcez',
+                'email': 'exemplo@dominio.com',
+                'photo': '',
+                'role': 'Administrador',
+              },
+            ),
+          ),
+        );
+      } else {
+        _showAlert('Usuário ou senha incorretos.');
       }
     }
   }
