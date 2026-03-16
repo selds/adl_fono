@@ -43,7 +43,7 @@ class _HomePageState extends State<HomePage> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: const Text('ADL'),
+        title: const Text('Avaliação do Desenvolvimento da Linguagem 2 - ADL'),
         centerTitle: true,
         actions: [
           IconButton(

@@ -707,7 +707,7 @@ class _AdlProtocolPageState extends State<AdlProtocolPage> {
                     ),
                     margin: const EdgeInsets.only(bottom: 16),
                     child: const Text(
-                      '1 ano e 6 meses ate 1 ano e 11 meses',
+                      '1 ano a 1 ano e 5 meses',
                       textAlign: TextAlign.center,
                       style: TextStyle(
                         fontWeight: FontWeight.bold,
