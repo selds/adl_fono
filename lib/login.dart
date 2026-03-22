@@ -1,3 +1,4 @@
+import 'package:adl_fono/services/auth_service.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'dart:ui';
@@ -28,19 +29,26 @@ class _LoginScreenState extends State<LoginScreen> {
 
     setState(() => _isLoading = true);
     try {
-      final credential = await FirebaseAuth.instance.signInWithEmailAndPassword(
+      final appUser = await AuthService.signIn(
         email: _emailController.text.trim(),
         password: _passwordController.text,
       );
       if (!mounted) return;
-      final user = credential.user!;
+
+      if (appUser == null) {
+        _showAlert('Falha ao fazer login.');
+        return;
+      }
+
       Navigator.of(context).pushReplacementNamed(
         '/',
         arguments: {
-          'name': user.displayName ?? 'Usuário',
-          'email': user.email ?? '',
-          'photo': user.photoURL ?? '',
-          'role': 'Fonoaudiólogo',
+          'name': appUser.displayName ?? 'Usuário',
+          'email': appUser.email,
+          'photo': appUser.photoUrl ?? '',
+          'role': appUser.role.value,
+          'uid': appUser.uid,
+          'isAdmin': appUser.isAdmin,
         },
       );
     } on FirebaseAuthException catch (e) {
@@ -55,6 +63,9 @@ class _LoginScreenState extends State<LoginScreen> {
         _ => 'Erro ao entrar: ${e.message}',
       };
       _showAlert(message);
+    } catch (e) {
+      if (!mounted) return;
+      _showAlert('Erro: $e');
     } finally {
       if (mounted) setState(() => _isLoading = false);
     }
@@ -67,7 +78,7 @@ class _LoginScreenState extends State<LoginScreen> {
       return;
     }
     try {
-      await FirebaseAuth.instance.sendPasswordResetEmail(email: email);
+      await AuthService.sendPasswordResetEmail(email);
       if (!mounted) return;
       _showAlert('E-mail de recuperação enviado para $email.');
     } on FirebaseAuthException catch (e) {
