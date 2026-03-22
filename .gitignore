@@ -46,14 +46,14 @@ app.*.map.json
 
 
 # Security — Firebase credentials (never commit real keys)
-lib/firebase_options.dart
+lib/firebase_options.local.dart
 google-services.json
 GoogleService-Info.plist
 # Explicit paths for credential files
 android/app/google-services.json
 ios/Runner/GoogleService-Info.plist
 macos/Runner/GoogleService-Info.plist
-firebase_options.dart
+firebase_options.local.dart
 
 # Flutter web build output (never commit compiled build files)
 main.dart.js
@@ -69,3 +69,6 @@ canvaskit/
 icons/
 *.part.js
 *.part.js.map
+
+# Keep the checked-in wrapper that reads from GitHub Secrets/dart-defines
+!lib/firebase_options.dart
