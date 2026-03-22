@@ -54,3 +54,18 @@ android/app/google-services.json
 ios/Runner/GoogleService-Info.plist
 macos/Runner/GoogleService-Info.plist
 firebase_options.dart
+
+# Flutter web build output (never commit compiled build files)
+main.dart.js
+main.dart.js.map
+flutter.js
+flutter_bootstrap.js
+flutter_service_worker.js
+flutter_service_worker.js.map
+version.json
+manifest.json
+favicon.png
+canvaskit/
+icons/
+*.part.js
+*.part.js.map
