@@ -1,5 +1,4 @@
-import 'dart:convert';
-import 'package:shared_preferences/shared_preferences.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:uuid/uuid.dart';
 
 class PacienteFicha {
@@ -69,54 +68,55 @@ class PacienteFicha {
   );
 }
 
-/// Repositório para manter os registros salvos com persistência em disco.
-///
+/// Repositório para fichas de pacientes — persistência via Cloud Firestore.
 class FichaRepository {
   FichaRepository._();
 
-  static const String _key = 'paciente_fichas';
+  static const _collection = 'pacientes';
   static List<PacienteFicha> _entries = [];
+  static final _db = FirebaseFirestore.instance;
 
   static Future<void> init() async {
-    final prefs = await SharedPreferences.getInstance();
-    final jsonString = prefs.getString(_key);
-    if (jsonString != null) {
-      final jsonList = jsonDecode(jsonString) as List;
-      _entries = jsonList.map((e) => PacienteFicha.fromJson(e)).toList();
-    }
-  }
-
-  static Future<void> _save() async {
-    final prefs = await SharedPreferences.getInstance();
-    final jsonList = _entries.map((e) => e.toJson()).toList();
-    await prefs.setString(_key, jsonEncode(jsonList));
+    final snapshot = await _db.collection(_collection).get();
+    _entries = snapshot.docs.map((doc) {
+      final data = doc.data();
+      data['id'] = doc.id;
+      return PacienteFicha.fromJson(data);
+    }).toList();
+    _entries.sort((a, b) => b.savedAt.compareTo(a.savedAt));
   }
 
   static List<PacienteFicha> get all => List.unmodifiable(_entries);
 
   static Future<void> add(PacienteFicha ficha) async {
+    final data = ficha.toJson()..remove('id');
+    await _db.collection(_collection).doc(ficha.id).set(data);
     _entries.add(ficha);
-    await _save();
   }
 
   static Future<void> update(
     PacienteFicha original,
     PacienteFicha updated,
   ) async {
+    final data = updated.toJson()..remove('id');
+    await _db.collection(_collection).doc(original.id).update(data);
     final index = _entries.indexWhere((e) => e.id == original.id);
     if (index != -1) {
       _entries[index] = updated;
-      await _save();
     }
   }
 
   static Future<void> clear() async {
+    final batch = _db.batch();
+    for (final e in _entries) {
+      batch.delete(_db.collection(_collection).doc(e.id));
+    }
+    await batch.commit();
     _entries.clear();
-    await _save();
   }
 
   static Future<void> remove(PacienteFicha ficha) async {
+    await _db.collection(_collection).doc(ficha.id).delete();
     _entries.removeWhere((e) => e.id == ficha.id);
-    await _save();
   }
 }

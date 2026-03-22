@@ -1,5 +1,4 @@
-import 'dart:convert';
-import 'package:shared_preferences/shared_preferences.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:uuid/uuid.dart';
 
 class AdlProtocol {
@@ -59,25 +58,21 @@ class AdlProtocol {
   }
 }
 
+/// Repositório para protocolos ADL — persistência via Cloud Firestore.
 class AdlProtocolRepository {
   AdlProtocolRepository._();
 
-  static const _key = 'adl_protocols';
+  static const _collection = 'adl_protocols';
   static List<AdlProtocol> _entries = [];
+  static final _db = FirebaseFirestore.instance;
 
   static Future<void> init() async {
-    final prefs = await SharedPreferences.getInstance();
-    final jsonString = prefs.getString(_key);
-    if (jsonString != null) {
-      final jsonList = jsonDecode(jsonString) as List;
-      _entries = jsonList.map((e) => AdlProtocol.fromJson(e)).toList();
-    }
-  }
-
-  static Future<void> _save() async {
-    final prefs = await SharedPreferences.getInstance();
-    final jsonList = _entries.map((e) => e.toJson()).toList();
-    await prefs.setString(_key, jsonEncode(jsonList));
+    final snapshot = await _db.collection(_collection).get();
+    _entries = snapshot.docs.map((doc) {
+      final data = doc.data();
+      data['id'] = doc.id;
+      return AdlProtocol.fromJson(data);
+    }).toList();
   }
 
   static List<AdlProtocol> get all => List.unmodifiable(_entries);
@@ -95,20 +90,22 @@ class AdlProtocolRepository {
   }
 
   static Future<void> add(AdlProtocol protocol) async {
+    final data = protocol.toJson()..remove('id');
+    await _db.collection(_collection).doc(protocol.id).set(data);
     _entries.add(protocol);
-    await _save();
   }
 
   static Future<void> update(AdlProtocol original, AdlProtocol updated) async {
+    final data = updated.toJson()..remove('id');
+    await _db.collection(_collection).doc(original.id).update(data);
     final index = _entries.indexWhere((e) => e.id == original.id);
     if (index != -1) {
       _entries[index] = updated;
-      await _save();
     }
   }
 
   static Future<void> remove(AdlProtocol protocol) async {
+    await _db.collection(_collection).doc(protocol.id).delete();
     _entries.removeWhere((e) => e.id == protocol.id);
-    await _save();
   }
 }

@@ -1,3 +1,4 @@
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 
 class HomePage extends StatefulWidget {
@@ -49,7 +50,9 @@ class _HomePageState extends State<HomePage> {
           IconButton(
             icon: const Icon(Icons.logout),
             tooltip: 'Sair',
-            onPressed: () {
+            onPressed: () async {
+              await FirebaseAuth.instance.signOut();
+              if (!context.mounted) return;
               Navigator.of(context).pushReplacementNamed('/login');
             },
           ),

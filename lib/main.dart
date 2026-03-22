@@ -1,14 +1,17 @@
 import 'package:adl_fono/adl.dart';
 import 'package:adl_fono/adl_protocol_page.dart';
+import 'package:adl_fono/firebase_options.dart';
 import 'package:adl_fono/history_page.dart';
 import 'package:adl_fono/home_page.dart';
 import 'package:adl_fono/login.dart';
 import 'package:adl_fono/models/adl_protocol.dart';
 import 'package:adl_fono/models/paciente_ficha.dart';
+import 'package:firebase_core/firebase_core.dart';
 import 'package:flutter/material.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
+  await Firebase.initializeApp(options: DefaultFirebaseOptions.currentPlatform);
   await FichaRepository.init();
   await AdlProtocolRepository.init();
   runApp(const MainApp());

@@ -1,7 +1,7 @@
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'dart:ui';
 import 'package:url_launcher/url_launcher.dart';
-import 'package:adl_fono/home_page.dart';
 
 class LoginScreen extends StatefulWidget {
   const LoginScreen({super.key});
@@ -11,9 +11,6 @@ class LoginScreen extends StatefulWidget {
 }
 
 class _LoginScreenState extends State<LoginScreen> {
-  static const _adminUser = 'admin';
-  static const _adminPassword = 'admin123';
-
   final _formKey = GlobalKey<FormState>();
   final _emailController = TextEditingController();
   final _passwordController = TextEditingController();
@@ -27,38 +24,55 @@ class _LoginScreenState extends State<LoginScreen> {
   }
 
   Future<void> _login() async {
-    if (_formKey.currentState!.validate()) {
-      setState(() => _isLoading = true);
-      await Future.delayed(const Duration(seconds: 2));
-      setState(() => _isLoading = false);
+    if (!_formKey.currentState!.validate()) return;
 
+    setState(() => _isLoading = true);
+    try {
+      final credential = await FirebaseAuth.instance.signInWithEmailAndPassword(
+        email: _emailController.text.trim(),
+        password: _passwordController.text,
+      );
       if (!mounted) return;
-
-      final email = _emailController.text.trim();
-      final password = _passwordController.text;
-
-      if (email == _adminUser && password == _adminPassword) {
-        // Navega para a tela principal e remove a tela de login da pilha
-        Navigator.of(context).pushReplacement(
-          MaterialPageRoute(
-            builder: (_) => const HomePage(
-              userData: {
-                'name': 'Samuel Garcez',
-                'email': 'exemplo@dominio.com',
-                'photo': '',
-                'role': 'Administrador',
-              },
-            ),
-          ),
-        );
-      } else {
-        _showAlert('Usuário ou senha incorretos.');
-      }
+      final user = credential.user!;
+      Navigator.of(context).pushReplacementNamed(
+        '/',
+        arguments: {
+          'name': user.displayName ?? 'Usuário',
+          'email': user.email ?? '',
+          'photo': user.photoURL ?? '',
+          'role': 'Fonoaudiólogo',
+        },
+      );
+    } on FirebaseAuthException catch (e) {
+      if (!mounted) return;
+      final message = switch (e.code) {
+        'user-not-found' || 'wrong-password' || 'invalid-credential' =>
+          'E-mail ou senha incorretos.',
+        'invalid-email' => 'E-mail inválido.',
+        'user-disabled' => 'Conta desativada. Entre em contato com o suporte.',
+        'too-many-requests' => 'Muitas tentativas. Tente novamente mais tarde.',
+        _ => 'Erro ao entrar: ${e.message}',
+      };
+      _showAlert(message);
+    } finally {
+      if (mounted) setState(() => _isLoading = false);
     }
   }
 
-  void _forgotPassword() {
-    _showAlert('Instruções de recuperação de senha enviadas!');
+  Future<void> _forgotPassword() async {
+    final email = _emailController.text.trim();
+    if (email.isEmpty) {
+      _showAlert('Insira seu e-mail para recuperar a senha.');
+      return;
+    }
+    try {
+      await FirebaseAuth.instance.sendPasswordResetEmail(email: email);
+      if (!mounted) return;
+      _showAlert('E-mail de recuperação enviado para $email.');
+    } on FirebaseAuthException catch (e) {
+      if (!mounted) return;
+      _showAlert('Não foi possível enviar o e-mail: ${e.message}');
+    }
   }
 
   Future<void> _showAlert(String message) async {
@@ -130,7 +144,7 @@ class _LoginScreenState extends State<LoginScreen> {
                                   keyboardType: TextInputType.emailAddress,
                                   style: const TextStyle(color: Colors.white),
                                   decoration: InputDecoration(
-                                    labelText: 'Usuário ou E-mail',
+                                    labelText: 'E-mail',
                                     labelStyle: const TextStyle(
                                       color: Colors.white70,
                                     ),
