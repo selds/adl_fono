@@ -1,17 +1,17 @@
-import 'package:firebase_auth/firebase_auth.dart';
+import 'package:adl_fono/services/auth_service.dart';
 import 'package:flutter/material.dart';
 
 class HomePage extends StatefulWidget {
   const HomePage({super.key, this.userData});
 
-  final Map<String, String>? userData;
+  final Map<String, dynamic>? userData;
 
   @override
   State<HomePage> createState() => _HomePageState();
 }
 
 class _HomePageState extends State<HomePage> {
-  late Map<String, String> _userData;
+  late Map<String, dynamic> _userData;
 
   @override
   void initState() {
@@ -22,7 +22,9 @@ class _HomePageState extends State<HomePage> {
           'name': 'Usuário',
           'email': 'exemplo@dominio.com',
           'photo': '',
-          'role': 'Administrador',
+          'role': 'fonoaudiologo',
+          'uid': '',
+          'isAdmin': false,
         };
   }
 
@@ -50,10 +52,11 @@ class _HomePageState extends State<HomePage> {
           IconButton(
             icon: const Icon(Icons.logout),
             tooltip: 'Sair',
-            onPressed: () async {
-              await FirebaseAuth.instance.signOut();
-              if (!context.mounted) return;
-              Navigator.of(context).pushReplacementNamed('/login');
+            onPressed: () {
+              final nav = Navigator.of(context);
+              AuthService.signOut().then((_) {
+                nav.pushReplacementNamed('/login');
+              });
             },
           ),
         ],
@@ -157,6 +160,15 @@ class _HomePageState extends State<HomePage> {
                       color: const Color(0xFF764ba2),
                       onTap: () => Navigator.of(context).pushNamed('/history'),
                     ),
+                    if (_userData['isAdmin'] == true)
+                      _ActionCard(
+                        label: 'Gerenciar usuários',
+                        icon: Icons.admin_panel_settings,
+                        color: const Color(0xFFFF6B6B),
+                        onTap: () => Navigator.of(
+                          context,
+                        ).pushNamed('/admin', arguments: {'isAdmin': true}),
+                      ),
                   ],
                 ),
               ],
@@ -171,8 +183,8 @@ class _HomePageState extends State<HomePage> {
 class _EditProfileDialog extends StatefulWidget {
   const _EditProfileDialog({required this.initialData, required this.onSave});
 
-  final Map<String, String> initialData;
-  final void Function(Map<String, String>) onSave;
+  final Map<String, dynamic> initialData;
+  final void Function(Map<String, dynamic>) onSave;
 
   @override
   State<_EditProfileDialog> createState() => _EditProfileDialogState();
@@ -208,6 +220,8 @@ class _EditProfileDialogState extends State<_EditProfileDialog> {
       'email': _emailController.text.trim(),
       'photo': _photoController.text.trim(),
       'role': _roleController.text.trim(),
+      'uid': widget.initialData['uid'],
+      'isAdmin': widget.initialData['isAdmin'] ?? false,
     };
     widget.onSave(updatedData);
     Navigator.of(context).pop();
