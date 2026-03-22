@@ -46,8 +46,9 @@ class _LoginScreenState extends State<LoginScreen> {
     } on FirebaseAuthException catch (e) {
       if (!mounted) return;
       final message = switch (e.code) {
-        'user-not-found' || 'wrong-password' || 'invalid-credential' =>
-          'E-mail ou senha incorretos.',
+        'user-not-found' ||
+        'wrong-password' ||
+        'invalid-credential' => 'E-mail ou senha incorretos.',
         'invalid-email' => 'E-mail inválido.',
         'user-disabled' => 'Conta desativada. Entre em contato com o suporte.',
         'too-many-requests' => 'Muitas tentativas. Tente novamente mais tarde.',
