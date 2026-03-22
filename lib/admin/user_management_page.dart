@@ -255,16 +255,10 @@ class _UserManagementPageState extends State<UserManagementPage> {
 
     try {
       if (newRole != user.role) {
-        await AuthService.updateUserRole(
-          uid: user.uid,
-          role: newRole,
-        );
+        await AuthService.updateUserRole(uid: user.uid, role: newRole);
       }
       if (isActive != user.isActive) {
-        await AuthService.setUserActive(
-          uid: user.uid,
-          isActive: isActive,
-        );
+        await AuthService.setUserActive(uid: user.uid, isActive: isActive);
       }
       if (!mounted) return;
       nav.pop();
