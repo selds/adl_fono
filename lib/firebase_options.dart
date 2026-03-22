@@ -7,22 +7,16 @@ class DefaultFirebaseOptions {
 
   static FirebaseOptions get currentPlatform {
     if (kIsWeb) {
-      _ensureConfigured(web, 'web');
       return web;
     }
-
     switch (defaultTargetPlatform) {
       case TargetPlatform.android:
-        _ensureConfigured(android, 'android');
         return android;
       case TargetPlatform.iOS:
-        _ensureConfigured(ios, 'ios');
         return ios;
       case TargetPlatform.macOS:
-        _ensureConfigured(macos, 'macos');
         return macos;
       case TargetPlatform.windows:
-        _ensureConfigured(windows, 'windows');
         return windows;
       default:
         throw UnsupportedError(
@@ -76,15 +70,4 @@ class DefaultFirebaseOptions {
     storageBucket: String.fromEnvironment('FIREBASE_STORAGE_BUCKET'),
     measurementId: String.fromEnvironment('FIREBASE_WINDOWS_MEASUREMENT_ID'),
   );
-
-  static void _ensureConfigured(FirebaseOptions options, String platform) {
-    if (options.apiKey.isEmpty ||
-        options.appId.isEmpty ||
-        options.messagingSenderId.isEmpty ||
-        options.projectId.isEmpty) {
-      throw StateError(
-        'Firebase nao configurado para $platform. Defina os dart-defines necessarios antes do build.',
-      );
-    }
-  }
 }
