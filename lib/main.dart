@@ -1,5 +1,6 @@
 import 'package:adl_fono/adl.dart';
 import 'package:adl_fono/adl_protocol_page.dart';
+import 'package:adl_fono/admin/user_management_page.dart';
 import 'package:adl_fono/firebase_options.dart';
 import 'package:adl_fono/history_page.dart';
 import 'package:adl_fono/home_page.dart';
@@ -57,7 +58,48 @@ class MainApp extends StatelessWidget {
             },
           );
         },
+        '/admin': (context) {
+          final args =
+              ModalRoute.of(context)?.settings.arguments
+                  as Map<String, dynamic>?;
+          final isAdmin = args?['isAdmin'] as bool? ?? false;
+
+          if (!isAdmin) {
+            return _buildAccessDeniedPage(context);
+          }
+          return const UserManagementPage();
+        },
       },
+    );
+  }
+
+  static Widget _buildAccessDeniedPage(BuildContext context) {
+    return Scaffold(
+      appBar: AppBar(title: const Text('Acesso Negado')),
+      body: Center(
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            const Icon(Icons.lock, size: 64, color: Colors.red),
+            const SizedBox(height: 16),
+            const Text(
+              'Acesso Negado',
+              style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold),
+            ),
+            const SizedBox(height: 8),
+            const Text(
+              'Você não tem permissão para acessar esta página.',
+              textAlign: TextAlign.center,
+              style: TextStyle(color: Colors.grey),
+            ),
+            const SizedBox(height: 24),
+            ElevatedButton(
+              onPressed: () => Navigator.of(context).pushReplacementNamed('/'),
+              child: const Text('Voltar ao Início'),
+            ),
+          ],
+        ),
+      ),
     );
   }
 }
