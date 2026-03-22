@@ -13,6 +13,98 @@ class HistoryPage extends StatefulWidget {
 class _HistoryPageState extends State<HistoryPage> {
   String _searchQuery = '';
 
+  String _simNaoLabel(bool? value) {
+    if (value == true) return 'Sim';
+    if (value == false) return 'Não';
+    return 'Não informado';
+  }
+
+  String _resumoTexto(String? value) {
+    final text = (value ?? '').trim();
+    if (text.isEmpty) return 'Sem observação';
+    if (text.length <= 90) return text;
+    return '${text.substring(0, 90)}...';
+  }
+
+  Widget _buildProtocolSummary(AdlProtocol protocol) {
+    final r = protocol.receptiveAnswers;
+    final e = protocol.expressiveAnswers;
+
+    final compreensivaVisual = ((r['q5Score'] as String?)?.trim() ?? '') == '1'
+        ? '1'
+        : '0';
+    final compreensivaAuditiva =
+        ((r['q6Score'] as String?)?.trim() ?? '') == '1' ? '1' : '0';
+    final expressiva1 = ((e['q1Score'] as String?)?.trim() ?? '') == '1'
+        ? '1'
+        : '0';
+    final expressiva2 = ((e['q2Score'] as String?)?.trim() ?? '') == '1'
+        ? '1'
+        : '0';
+    final expressiva3 = ((e['q3Score'] as String?)?.trim() ?? '') == '1'
+        ? '1'
+        : '0';
+
+    final q5a = _simNaoLabel(r['q5a'] as bool?);
+    final q5b = _simNaoLabel(r['q5b'] as bool?);
+    final q6a = _simNaoLabel(r['q6a'] as bool?);
+    final q6b = _simNaoLabel(r['q6b'] as bool?);
+
+    final q1Met = _simNaoLabel(e['q1Met'] as bool?);
+    final q2Met = _simNaoLabel(e['q2Met'] as bool?);
+    final q3Met = _simNaoLabel(e['q3Met'] as bool?);
+
+    return Container(
+      margin: const EdgeInsets.only(top: 8),
+      padding: const EdgeInsets.all(10),
+      decoration: BoxDecoration(
+        color: const Color(0xFFF8FAFC),
+        borderRadius: BorderRadius.circular(8),
+        border: Border.all(color: const Color(0xFFE2E8F0)),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            'Compreensiva: Atenção visual $compreensivaVisual | Atenção auditiva $compreensivaAuditiva',
+            style: const TextStyle(fontWeight: FontWeight.w600, fontSize: 12),
+          ),
+          const SizedBox(height: 2),
+          Text(
+            'Visual: a) $q5a • b) $q5b',
+            style: const TextStyle(fontSize: 12),
+          ),
+          Text(
+            'Auditiva: a) $q6a • b) $q6b',
+            style: const TextStyle(fontSize: 12),
+          ),
+          const SizedBox(height: 6),
+          Text(
+            'Expressiva: Q1 $expressiva1 | Q2 $expressiva2 | Q3 $expressiva3',
+            style: const TextStyle(fontWeight: FontWeight.w600, fontSize: 12),
+          ),
+          const SizedBox(height: 2),
+          Text('Q1 atende: $q1Met', style: const TextStyle(fontSize: 12)),
+          Text('Q2 atende: $q2Met', style: const TextStyle(fontSize: 12)),
+          Text('Q3 atende: $q3Met', style: const TextStyle(fontSize: 12)),
+          const SizedBox(height: 6),
+          Text(
+            'Obs Q1: ${_resumoTexto(e['q1Text'] as String?)}',
+            style: const TextStyle(fontSize: 12, color: Colors.black87),
+          ),
+          Text(
+            'Obs Q2: ${_resumoTexto(e['q2Text'] as String?)}',
+            style: const TextStyle(fontSize: 12, color: Colors.black87),
+          ),
+          Text(
+            'Obs Q3: ${_resumoTexto(e['q3Text'] as String?)}',
+            style: const TextStyle(fontSize: 12, color: Colors.black87),
+          ),
+        ],
+      ),
+    );
+  }
+
   String _formatAge(String dateString) {
     try {
       final parts = dateString.split('/');
@@ -96,7 +188,8 @@ class _HistoryPageState extends State<HistoryPage> {
   }
 
   Future<void> _showProtocolsForPaciente(String pacienteId, String nome) async {
-    final protocols = AdlProtocolRepository.forPaciente(pacienteId);
+    final protocols = AdlProtocolRepository.forPaciente(pacienteId)
+      ..sort((a, b) => b.createdAt.compareTo(a.createdAt));
 
     await showDialog<void>(
       context: context,
@@ -112,9 +205,19 @@ class _HistoryPageState extends State<HistoryPage> {
                   itemBuilder: (context, index) {
                     final protocol = protocols[index];
                     return ListTile(
-                      title: Text(protocol.createdAt.toLocal().toString()),
-                      subtitle: Text(
-                        'Data: ${protocol.createdAt.toLocal().toString().substring(0, 10)}',
+                      contentPadding: EdgeInsets.zero,
+                      title: Text(
+                        'Protocolo #${protocols.length - index} - ${protocol.createdAt.toLocal().toString().substring(0, 10)}',
+                      ),
+                      subtitle: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            'Registrado em: ${protocol.createdAt.toLocal().toString().substring(0, 16)}',
+                            style: const TextStyle(fontSize: 12),
+                          ),
+                          _buildProtocolSummary(protocol),
+                        ],
                       ),
                       trailing: IconButton(
                         icon: const Icon(Icons.edit),
