@@ -27,6 +27,7 @@ class _HistoryPageState extends State<HistoryPage> {
   }
 
   Widget _buildProtocolSummary(AdlProtocol protocol) {
+    final colorScheme = Theme.of(context).colorScheme;
     final r = protocol.receptiveAnswers;
     final e = protocol.expressiveAnswers;
 
@@ -58,47 +59,64 @@ class _HistoryPageState extends State<HistoryPage> {
       margin: const EdgeInsets.only(top: 8),
       padding: const EdgeInsets.all(10),
       decoration: BoxDecoration(
-        color: const Color(0xFFF8FAFC),
+        color: colorScheme.surfaceContainerHighest,
         borderRadius: BorderRadius.circular(8),
-        border: Border.all(color: const Color(0xFFE2E8F0)),
+        border: Border.all(color: colorScheme.outlineVariant),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Text(
             'Compreensiva: Atenção visual $compreensivaVisual | Atenção auditiva $compreensivaAuditiva',
-            style: const TextStyle(fontWeight: FontWeight.w600, fontSize: 12),
+            style: TextStyle(
+              fontWeight: FontWeight.w600,
+              fontSize: 12,
+              color: colorScheme.onSurface,
+            ),
           ),
           const SizedBox(height: 2),
           Text(
             'Visual: a) $q5a • b) $q5b',
-            style: const TextStyle(fontSize: 12),
+            style: TextStyle(fontSize: 12, color: colorScheme.onSurface),
           ),
           Text(
             'Auditiva: a) $q6a • b) $q6b',
-            style: const TextStyle(fontSize: 12),
+            style: TextStyle(fontSize: 12, color: colorScheme.onSurface),
           ),
           const SizedBox(height: 6),
           Text(
             'Expressiva: Q1 $expressiva1 | Q2 $expressiva2 | Q3 $expressiva3',
-            style: const TextStyle(fontWeight: FontWeight.w600, fontSize: 12),
+            style: TextStyle(
+              fontWeight: FontWeight.w600,
+              fontSize: 12,
+              color: colorScheme.onSurface,
+            ),
           ),
           const SizedBox(height: 2),
-          Text('Q1 atende: $q1Met', style: const TextStyle(fontSize: 12)),
-          Text('Q2 atende: $q2Met', style: const TextStyle(fontSize: 12)),
-          Text('Q3 atende: $q3Met', style: const TextStyle(fontSize: 12)),
+          Text(
+            'Q1 atende: $q1Met',
+            style: TextStyle(fontSize: 12, color: colorScheme.onSurface),
+          ),
+          Text(
+            'Q2 atende: $q2Met',
+            style: TextStyle(fontSize: 12, color: colorScheme.onSurface),
+          ),
+          Text(
+            'Q3 atende: $q3Met',
+            style: TextStyle(fontSize: 12, color: colorScheme.onSurface),
+          ),
           const SizedBox(height: 6),
           Text(
             'Obs Q1: ${_resumoTexto(e['q1Text'] as String?)}',
-            style: const TextStyle(fontSize: 12, color: Colors.black87),
+            style: TextStyle(fontSize: 12, color: colorScheme.onSurface),
           ),
           Text(
             'Obs Q2: ${_resumoTexto(e['q2Text'] as String?)}',
-            style: const TextStyle(fontSize: 12, color: Colors.black87),
+            style: TextStyle(fontSize: 12, color: colorScheme.onSurface),
           ),
           Text(
             'Obs Q3: ${_resumoTexto(e['q3Text'] as String?)}',
-            style: const TextStyle(fontSize: 12, color: Colors.black87),
+            style: TextStyle(fontSize: 12, color: colorScheme.onSurface),
           ),
         ],
       ),
@@ -265,6 +283,7 @@ class _HistoryPageState extends State<HistoryPage> {
 
   @override
   Widget build(BuildContext context) {
+    final colorScheme = Theme.of(context).colorScheme;
     final entries = FichaRepository.all;
 
     final grouped = <String, List<PacienteFicha>>{};
@@ -280,6 +299,7 @@ class _HistoryPageState extends State<HistoryPage> {
         .toList();
 
     return Scaffold(
+      backgroundColor: colorScheme.surface,
       appBar: AppBar(title: const Text('Histórico')),
       body: entries.isEmpty
           ? const Center(
@@ -296,10 +316,26 @@ class _HistoryPageState extends State<HistoryPage> {
                     vertical: 8,
                   ),
                   child: TextField(
-                    decoration: const InputDecoration(
+                    style: TextStyle(color: colorScheme.onSurface),
+                    decoration: InputDecoration(
                       labelText: 'Buscar por nome',
-                      prefixIcon: Icon(Icons.search),
-                      border: OutlineInputBorder(),
+                      labelStyle: TextStyle(color: colorScheme.onSurfaceVariant),
+                      prefixIcon: Icon(
+                        Icons.search,
+                        color: colorScheme.onSurfaceVariant,
+                      ),
+                      filled: true,
+                      fillColor: colorScheme.surfaceContainerHighest,
+                      border: const OutlineInputBorder(),
+                      enabledBorder: OutlineInputBorder(
+                        borderSide: BorderSide(color: colorScheme.outlineVariant),
+                      ),
+                      focusedBorder: OutlineInputBorder(
+                        borderSide: BorderSide(
+                          color: colorScheme.primary,
+                          width: 1.4,
+                        ),
+                      ),
                     ),
                     onChanged: (value) {
                       setState(() {
@@ -317,6 +353,8 @@ class _HistoryPageState extends State<HistoryPage> {
                       final items = grouped[name]!;
                       return Card(
                         margin: const EdgeInsets.only(bottom: 12),
+                        color: colorScheme.surfaceContainerLow,
+                        surfaceTintColor: Colors.transparent,
                         child: ExpansionTile(
                           title: Text(name),
                           subtitle: Text('Registros: ${items.length}'),
