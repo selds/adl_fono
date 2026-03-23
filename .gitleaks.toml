@@ -1,0 +1,10 @@
+title = "adl_fono gitleaks config"
+
+[allowlist]
+description = "Ignore generated files and known false-positive license text"
+paths = [
+  '''^build/''',
+  '''^assets/NOTICES$''',
+  '''^flutter_service_worker\.js$''',
+  '''^web/flutter_service_worker\.js$''',
+]
