@@ -20,6 +20,29 @@ class HomePage extends StatefulWidget {
 class _HomePageState extends State<HomePage> {
   late Map<String, dynamic> _userData;
 
+  Future<void> _refreshUserAccess() async {
+    try {
+      final appUser = await AuthService.getCurrentUserProfile();
+      if (!mounted || appUser == null) return;
+
+      final fallbackName = (_userData['name'] as String?) ?? 'Usuário';
+      final displayName = (appUser.displayName ?? '').trim();
+      setState(() {
+        _userData = {
+          ..._userData,
+          'name': displayName.isEmpty ? fallbackName : displayName,
+          'email': appUser.email,
+          'photo': appUser.photoUrl ?? '',
+          'role': appUser.role.value,
+          'uid': appUser.uid,
+          'isAdmin': appUser.isAdmin,
+        };
+      });
+    } catch (_) {
+      // Em caso de falha transitória, mantém os dados atuais da sessão.
+    }
+  }
+
   Future<void> _showThemeModeDialog() async {
     ThemeMode selected = widget.currentThemeMode;
 
@@ -89,6 +112,8 @@ class _HomePageState extends State<HomePage> {
           'uid': '',
           'isAdmin': false,
         };
+
+            _refreshUserAccess();
   }
 
   void _editProfile() {
@@ -220,28 +245,35 @@ class _HomePageState extends State<HomePage> {
                       label: 'Criar nova anamnese',
                       icon: Icons.note_add,
                       color: const Color(0xFF667eea),
-                      onTap: () => Navigator.of(context).pushNamed('/anamnese'),
+                      onTap: () => Navigator.of(context)
+                          .pushNamed('/anamnese')
+                          .then((_) => _refreshUserAccess()),
                     ),
                     _ActionCard(
                       label: 'Acessar histórico',
                       icon: Icons.history,
                       color: const Color(0xFF764ba2),
-                      onTap: () => Navigator.of(context).pushNamed('/history'),
+                      onTap: () => Navigator.of(context)
+                          .pushNamed('/history')
+                          .then((_) => _refreshUserAccess()),
                     ),
                     if (_userData['isAdmin'] == true)
                       _ActionCard(
                         label: 'Gerenciar usuários',
                         icon: Icons.admin_panel_settings,
                         color: const Color(0xFFFF6B6B),
-                        onTap: () => Navigator.of(context).pushNamed('/admin'),
+                        onTap: () => Navigator.of(context)
+                            .pushNamed('/admin')
+                            .then((_) => _refreshUserAccess()),
                       ),
                     if (_userData['isAdmin'] == true)
                       _ActionCard(
                         label: 'Logs de acesso',
                         icon: Icons.fact_check,
                         color: const Color(0xFF2E7D32),
-                        onTap: () =>
-                            Navigator.of(context).pushNamed('/admin/logs'),
+                        onTap: () => Navigator.of(context)
+                            .pushNamed('/admin/logs')
+                            .then((_) => _refreshUserAccess()),
                       ),
                   ],
                 ),
