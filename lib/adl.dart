@@ -284,10 +284,19 @@ class _FichaPacientePageState extends State<FichaPacientePage> {
       inputFormatters: inputFormatters,
       decoration: InputDecoration(
         hintText: hintText,
+        hintStyle: TextStyle(color: colorScheme.onSurfaceVariant),
         filled: true,
         fillColor: fieldFill,
         contentPadding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
         border: OutlineInputBorder(borderRadius: BorderRadius.circular(4)),
+        enabledBorder: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(4),
+          borderSide: BorderSide(color: colorScheme.outlineVariant),
+        ),
+        focusedBorder: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(4),
+          borderSide: BorderSide(color: colorScheme.primary, width: 1.4),
+        ),
         suffixIcon: onTap != null
             ? IconButton(
                 icon: const Icon(Icons.calendar_today),
@@ -443,6 +452,8 @@ class _FichaPacientePageState extends State<FichaPacientePage> {
                             label: 'Sexo',
                             child: DropdownButtonFormField<String>(
                               initialValue: _selectedSexo,
+                              style: TextStyle(color: colorScheme.onSurface),
+                              dropdownColor: colorScheme.surfaceContainerHigh,
                               decoration: InputDecoration(
                                 filled: true,
                                 fillColor: fieldFill,
@@ -452,6 +463,19 @@ class _FichaPacientePageState extends State<FichaPacientePage> {
                                 ),
                                 border: OutlineInputBorder(
                                   borderRadius: BorderRadius.circular(4),
+                                ),
+                                enabledBorder: OutlineInputBorder(
+                                  borderRadius: BorderRadius.circular(4),
+                                  borderSide: BorderSide(
+                                    color: colorScheme.outlineVariant,
+                                  ),
+                                ),
+                                focusedBorder: OutlineInputBorder(
+                                  borderRadius: BorderRadius.circular(4),
+                                  borderSide: BorderSide(
+                                    color: colorScheme.primary,
+                                    width: 1.4,
+                                  ),
                                 ),
                               ),
                               items: const [
@@ -699,6 +723,14 @@ class _SectionField extends StatelessWidget {
               vertical: 8,
             ),
             border: OutlineInputBorder(borderRadius: BorderRadius.circular(4)),
+            enabledBorder: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(4),
+              borderSide: BorderSide(color: colorScheme.outlineVariant),
+            ),
+            focusedBorder: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(4),
+              borderSide: BorderSide(color: colorScheme.primary, width: 1.4),
+            ),
           ),
         ),
       ],
