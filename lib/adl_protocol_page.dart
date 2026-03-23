@@ -244,6 +244,8 @@ class _AdlProtocolPageState extends State<AdlProtocolPage> {
     TextEditingController controller, {
     bool readOnly = false,
   }) {
+    final theme = Theme.of(context);
+    final colorScheme = theme.colorScheme;
     return SizedBox(
       width: 56,
       child: TextFormField(
@@ -252,10 +254,14 @@ class _AdlProtocolPageState extends State<AdlProtocolPage> {
         readOnly: readOnly,
         onChanged: readOnly ? null : (_) => setState(() {}),
         textAlign: TextAlign.center,
-        decoration: const InputDecoration(
+        style: TextStyle(color: colorScheme.onSurface),
+        decoration: InputDecoration(
           hintText: '__',
-          border: OutlineInputBorder(),
-          contentPadding: EdgeInsets.symmetric(horizontal: 6, vertical: 6),
+          hintStyle: TextStyle(color: colorScheme.onSurfaceVariant),
+          filled: true,
+          fillColor: colorScheme.surfaceContainerHighest,
+          border: const OutlineInputBorder(),
+          contentPadding: const EdgeInsets.symmetric(horizontal: 6, vertical: 6),
         ),
       ),
     );
@@ -267,6 +273,7 @@ class _AdlProtocolPageState extends State<AdlProtocolPage> {
     void Function(bool?) onChange,
     TextEditingController? responseController,
   ) {
+    final colorScheme = Theme.of(context).colorScheme;
     return Padding(
       padding: const EdgeInsets.symmetric(vertical: 4),
       child: Column(
@@ -275,7 +282,10 @@ class _AdlProtocolPageState extends State<AdlProtocolPage> {
           Row(
             children: [
               Expanded(
-                child: Text(label, style: const TextStyle(fontSize: 13)),
+                child: Text(
+                  label,
+                  style: TextStyle(fontSize: 13, color: colorScheme.onSurface),
+                ),
               ),
               const SizedBox(width: 8),
               _buildYesNoToggle(
@@ -289,10 +299,14 @@ class _AdlProtocolPageState extends State<AdlProtocolPage> {
             const SizedBox(height: 6),
             TextFormField(
               controller: responseController,
-              decoration: const InputDecoration(
+              style: TextStyle(color: colorScheme.onSurface),
+              decoration: InputDecoration(
                 labelText: 'Resposta',
-                border: OutlineInputBorder(),
-                contentPadding: EdgeInsets.symmetric(
+                labelStyle: TextStyle(color: colorScheme.onSurfaceVariant),
+                filled: true,
+                fillColor: colorScheme.surfaceContainerHighest,
+                border: const OutlineInputBorder(),
+                contentPadding: const EdgeInsets.symmetric(
                   horizontal: 10,
                   vertical: 10,
                 ),
@@ -314,6 +328,7 @@ class _AdlProtocolPageState extends State<AdlProtocolPage> {
     required List<Widget> items,
     required String scoreInfo,
   }) {
+    final colorScheme = Theme.of(context).colorScheme;
     return Padding(
       padding: const EdgeInsets.only(bottom: 8),
       child: Column(
@@ -325,9 +340,10 @@ class _AdlProtocolPageState extends State<AdlProtocolPage> {
               Expanded(
                 child: Text(
                   title,
-                  style: const TextStyle(
+                  style: TextStyle(
                     fontWeight: FontWeight.bold,
                     fontSize: 13,
+                    color: colorScheme.onSurface,
                   ),
                 ),
               ),
@@ -339,7 +355,11 @@ class _AdlProtocolPageState extends State<AdlProtocolPage> {
             const SizedBox(height: 4),
             Text(
               description,
-              style: const TextStyle(fontSize: 12, fontStyle: FontStyle.italic),
+              style: TextStyle(
+                fontSize: 12,
+                fontStyle: FontStyle.italic,
+                color: colorScheme.onSurfaceVariant,
+              ),
             ),
           ],
           const SizedBox(height: 6),
@@ -347,9 +367,9 @@ class _AdlProtocolPageState extends State<AdlProtocolPage> {
           const SizedBox(height: 4),
           Text(
             scoreInfo,
-            style: const TextStyle(fontSize: 12, color: Colors.black54),
+            style: TextStyle(fontSize: 12, color: colorScheme.onSurfaceVariant),
           ),
-          const Divider(height: 20),
+          Divider(height: 20, color: colorScheme.outlineVariant),
         ],
       ),
     );
@@ -365,6 +385,7 @@ class _AdlProtocolPageState extends State<AdlProtocolPage> {
     required TextEditingController inputController,
     required String scoreInfo,
   }) {
+    final colorScheme = Theme.of(context).colorScheme;
     return Padding(
       padding: const EdgeInsets.only(bottom: 8),
       child: Column(
@@ -376,9 +397,10 @@ class _AdlProtocolPageState extends State<AdlProtocolPage> {
               Expanded(
                 child: Text(
                   title,
-                  style: const TextStyle(
+                  style: TextStyle(
                     fontWeight: FontWeight.bold,
                     fontSize: 13,
+                    color: colorScheme.onSurface,
                   ),
                 ),
               ),
@@ -390,7 +412,11 @@ class _AdlProtocolPageState extends State<AdlProtocolPage> {
             const SizedBox(height: 4),
             Text(
               description,
-              style: const TextStyle(fontSize: 12, fontStyle: FontStyle.italic),
+              style: TextStyle(
+                fontSize: 12,
+                fontStyle: FontStyle.italic,
+                color: colorScheme.onSurfaceVariant,
+              ),
             ),
           ],
           const SizedBox(height: 6),
@@ -411,8 +437,12 @@ class _AdlProtocolPageState extends State<AdlProtocolPage> {
           const SizedBox(height: 8),
           TextFormField(
             controller: inputController,
+            style: TextStyle(color: colorScheme.onSurface),
             decoration: InputDecoration(
               labelText: inputLabel,
+              labelStyle: TextStyle(color: colorScheme.onSurfaceVariant),
+              filled: true,
+              fillColor: colorScheme.surfaceContainerHighest,
               border: const OutlineInputBorder(),
               contentPadding: const EdgeInsets.symmetric(
                 horizontal: 10,
@@ -425,9 +455,9 @@ class _AdlProtocolPageState extends State<AdlProtocolPage> {
           const SizedBox(height: 4),
           Text(
             scoreInfo,
-            style: const TextStyle(fontSize: 12, color: Colors.black54),
+            style: TextStyle(fontSize: 12, color: colorScheme.onSurfaceVariant),
           ),
-          const Divider(height: 20),
+          Divider(height: 20, color: colorScheme.outlineVariant),
         ],
       ),
     );
@@ -438,6 +468,7 @@ class _AdlProtocolPageState extends State<AdlProtocolPage> {
     void Function(bool?) onChange, {
     VoidCallback? onAfterChange,
   }) {
+    final colorScheme = Theme.of(context).colorScheme;
     return Row(
       mainAxisSize: MainAxisSize.min,
       children: [
@@ -446,12 +477,13 @@ class _AdlProtocolPageState extends State<AdlProtocolPage> {
           children: [
             Checkbox(
               value: value == true,
+              side: BorderSide(color: colorScheme.outline),
               onChanged: (_) => setState(() {
                 onChange(value == true ? null : true);
                 onAfterChange?.call();
               }),
             ),
-            const Text('Sim'),
+            Text('Sim', style: TextStyle(color: colorScheme.onSurface)),
           ],
         ),
         Row(
@@ -459,12 +491,13 @@ class _AdlProtocolPageState extends State<AdlProtocolPage> {
           children: [
             Checkbox(
               value: value == false,
+              side: BorderSide(color: colorScheme.outline),
               onChanged: (_) => setState(() {
                 onChange(value == false ? null : false);
                 onAfterChange?.call();
               }),
             ),
-            const Text('Não'),
+            Text('Não', style: TextStyle(color: colorScheme.onSurface)),
           ],
         ),
       ],
@@ -475,21 +508,32 @@ class _AdlProtocolPageState extends State<AdlProtocolPage> {
     required String title,
     required List<Widget> children,
   }) {
+    final theme = Theme.of(context);
+    final colorScheme = theme.colorScheme;
+    final headerColor = theme.brightness == Brightness.dark
+        ? colorScheme.primaryContainer
+        : const Color(0xFF667eea);
+    final onHeaderColor = theme.brightness == Brightness.dark
+        ? colorScheme.onPrimaryContainer
+        : Colors.white;
+
     return Card(
       elevation: 3,
+      color: colorScheme.surfaceContainerLow,
+      surfaceTintColor: Colors.transparent,
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
       clipBehavior: Clip.antiAlias,
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
           Container(
-            color: const Color(0xFF667eea),
+            color: headerColor,
             padding: const EdgeInsets.symmetric(vertical: 10, horizontal: 12),
             child: Text(
               title,
               textAlign: TextAlign.center,
-              style: const TextStyle(
-                color: Colors.white,
+              style: TextStyle(
+                color: onHeaderColor,
                 fontWeight: FontWeight.bold,
                 fontSize: 14,
                 letterSpacing: 0.5,
@@ -510,6 +554,8 @@ class _AdlProtocolPageState extends State<AdlProtocolPage> {
 
   @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final colorScheme = theme.colorScheme;
     final isWide = MediaQuery.of(context).size.width > 700;
 
     final receptivaContent = _buildColumnCard(
@@ -566,24 +612,27 @@ class _AdlProtocolPageState extends State<AdlProtocolPage> {
         Container(
           padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
           decoration: BoxDecoration(
-            color: const Color(0xFFEEF2FF),
+            color: colorScheme.surfaceContainerHighest,
             borderRadius: BorderRadius.circular(8),
-            border: Border.all(color: const Color(0xFFCBD5E1)),
+            border: Border.all(color: colorScheme.outlineVariant),
           ),
           child: Row(
             children: [
-              const Expanded(
+              Expanded(
                 child: Text(
                   'Pontuação total da linguagem receptiva',
-                  style: TextStyle(fontWeight: FontWeight.w600),
+                  style: TextStyle(
+                    fontWeight: FontWeight.w600,
+                    color: colorScheme.onSurface,
+                  ),
                 ),
               ),
               Text(
                 '$_receptivaTotal',
-                style: const TextStyle(
+                style: TextStyle(
                   fontSize: 18,
                   fontWeight: FontWeight.bold,
-                  color: Color(0xFF1E3A8A),
+                  color: colorScheme.primary,
                 ),
               ),
             ],
@@ -639,24 +688,27 @@ class _AdlProtocolPageState extends State<AdlProtocolPage> {
         Container(
           padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
           decoration: BoxDecoration(
-            color: const Color(0xFFEEF2FF),
+            color: colorScheme.surfaceContainerHighest,
             borderRadius: BorderRadius.circular(8),
-            border: Border.all(color: const Color(0xFFCBD5E1)),
+            border: Border.all(color: colorScheme.outlineVariant),
           ),
           child: Row(
             children: [
-              const Expanded(
+              Expanded(
                 child: Text(
                   'Pontuação total da linguagem expressiva',
-                  style: TextStyle(fontWeight: FontWeight.w600),
+                  style: TextStyle(
+                    fontWeight: FontWeight.w600,
+                    color: colorScheme.onSurface,
+                  ),
                 ),
               ),
               Text(
                 '$_expressivaTotal',
-                style: const TextStyle(
+                style: TextStyle(
                   fontSize: 18,
                   fontWeight: FontWeight.bold,
-                  color: Color(0xFF1E3A8A),
+                  color: colorScheme.primary,
                 ),
               ),
             ],
@@ -666,6 +718,7 @@ class _AdlProtocolPageState extends State<AdlProtocolPage> {
     );
 
     return Scaffold(
+      backgroundColor: colorScheme.surface,
       appBar: AppBar(
         title: Text(
           widget.protocol == null
@@ -686,7 +739,8 @@ class _AdlProtocolPageState extends State<AdlProtocolPage> {
                   // Cabecalho
                   Container(
                     decoration: BoxDecoration(
-                      border: Border.all(color: Colors.black54),
+                      color: colorScheme.surfaceContainerLow,
+                      border: Border.all(color: colorScheme.outlineVariant),
                       borderRadius: BorderRadius.circular(6),
                     ),
                     padding: const EdgeInsets.symmetric(
@@ -694,7 +748,7 @@ class _AdlProtocolPageState extends State<AdlProtocolPage> {
                       horizontal: 16,
                     ),
                     margin: const EdgeInsets.only(bottom: 16),
-                    child: const Column(
+                    child: Column(
                       children: [
                         Text(
                           'FONOAUDIOLOGIA',
@@ -702,31 +756,39 @@ class _AdlProtocolPageState extends State<AdlProtocolPage> {
                           style: TextStyle(
                             fontWeight: FontWeight.bold,
                             fontSize: 16,
+                            color: colorScheme.onSurface,
                           ),
                         ),
                         SizedBox(height: 4),
                         Text(
                           'ADL\nPROTOCOLO DE APLICAÇÃO E PONTUAÇÃO',
                           textAlign: TextAlign.center,
-                          style: TextStyle(fontSize: 13),
+                          style: TextStyle(
+                            fontSize: 13,
+                            color: colorScheme.onSurfaceVariant,
+                          ),
                         ),
                       ],
                     ),
                   ),
                   // Faixa etaria
                   Container(
-                    color: const Color(0xFFf0f0f0),
+                    decoration: BoxDecoration(
+                      color: colorScheme.surfaceContainerHighest,
+                      borderRadius: BorderRadius.circular(6),
+                    ),
                     padding: const EdgeInsets.symmetric(
                       vertical: 8,
                       horizontal: 12,
                     ),
                     margin: const EdgeInsets.only(bottom: 16),
-                    child: const Text(
+                    child: Text(
                       '1 ano a 1 ano e 5 meses',
                       textAlign: TextAlign.center,
                       style: TextStyle(
                         fontWeight: FontWeight.bold,
                         fontSize: 15,
+                        color: colorScheme.onSurface,
                       ),
                     ),
                   ),
