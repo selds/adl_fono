@@ -41,11 +41,35 @@ class _FichaPacientePageState extends State<FichaPacientePage> {
   DateTime? _dataNasc;
   DateTime? _dataAvaliacao;
 
-  LinearGradient get _primaryGradient => const LinearGradient(
-    colors: [Color(0xFF667eea), Color(0xFF764ba2)],
-    begin: Alignment.centerLeft,
-    end: Alignment.centerRight,
-  );
+  LinearGradient _primaryGradientFor(Brightness brightness) {
+    if (brightness == Brightness.dark) {
+      return const LinearGradient(
+        colors: [Color(0xFF3D4DA8), Color(0xFF5A3C86)],
+        begin: Alignment.centerLeft,
+        end: Alignment.centerRight,
+      );
+    }
+    return const LinearGradient(
+      colors: [Color(0xFF667eea), Color(0xFF764ba2)],
+      begin: Alignment.centerLeft,
+      end: Alignment.centerRight,
+    );
+  }
+
+  LinearGradient _backgroundGradientFor(Brightness brightness) {
+    if (brightness == Brightness.dark) {
+      return const LinearGradient(
+        colors: [Color(0xFF11141C), Color(0xFF1A1F2B)],
+        begin: Alignment.topCenter,
+        end: Alignment.bottomCenter,
+      );
+    }
+    return const LinearGradient(
+      colors: [Color(0xFFF3F5FB), Color(0xFFEDEFF7)],
+      begin: Alignment.topCenter,
+      end: Alignment.bottomCenter,
+    );
+  }
 
   @override
   void initState() {
@@ -247,20 +271,27 @@ class _FichaPacientePageState extends State<FichaPacientePage> {
     VoidCallback? onTap,
     List<TextInputFormatter>? inputFormatters,
   }) {
+    final theme = Theme.of(context);
+    final colorScheme = theme.colorScheme;
+    final fieldFill = theme.brightness == Brightness.dark
+        ? colorScheme.surfaceContainerHighest
+        : Colors.white.withAlpha((0.9 * 255).round());
+
     return TextFormField(
       controller: controller,
-      style: const TextStyle(color: Colors.black87, fontSize: 14),
+      style: TextStyle(color: colorScheme.onSurface, fontSize: 14),
       keyboardType: onTap != null ? TextInputType.datetime : TextInputType.text,
       inputFormatters: inputFormatters,
       decoration: InputDecoration(
         hintText: hintText,
         filled: true,
-        fillColor: Colors.white.withAlpha((0.9 * 255).round()),
+        fillColor: fieldFill,
         contentPadding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
         border: OutlineInputBorder(borderRadius: BorderRadius.circular(4)),
         suffixIcon: onTap != null
             ? IconButton(
                 icon: const Icon(Icons.calendar_today),
+                color: colorScheme.onSurfaceVariant,
                 onPressed: onTap,
               )
             : null,
@@ -270,11 +301,22 @@ class _FichaPacientePageState extends State<FichaPacientePage> {
 
   @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final colorScheme = theme.colorScheme;
+    final isDark = theme.brightness == Brightness.dark;
+    final primaryGradient = _primaryGradientFor(theme.brightness);
+    final backgroundGradient = _backgroundGradientFor(theme.brightness);
+    final fieldFill = theme.brightness == Brightness.dark
+        ? colorScheme.surfaceContainerHighest
+        : Colors.white.withAlpha((0.9 * 255).round());
+
     return Scaffold(
-      backgroundColor: const Color(0xFFf5f5f5),
+      backgroundColor: Colors.transparent,
       appBar: AppBar(
         backgroundColor: Colors.transparent,
         elevation: 0,
+        foregroundColor: Colors.white,
+        surfaceTintColor: Colors.transparent,
         titleSpacing: 0,
         title: Row(
           children: [
@@ -327,26 +369,29 @@ class _FichaPacientePageState extends State<FichaPacientePage> {
           ),
         ],
         flexibleSpace: Container(
-          decoration: BoxDecoration(gradient: _primaryGradient),
+          decoration: BoxDecoration(gradient: primaryGradient),
         ),
       ),
-      body: Center(
-        child: SingleChildScrollView(
-          padding: const EdgeInsets.all(12),
-          child: ConstrainedBox(
-            constraints: const BoxConstraints(maxWidth: 800),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.stretch,
-              children: [
+      body: Container(
+        decoration: BoxDecoration(gradient: backgroundGradient),
+        child: Center(
+          child: SingleChildScrollView(
+            padding: const EdgeInsets.all(12),
+            child: ConstrainedBox(
+              constraints: const BoxConstraints(maxWidth: 800),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: [
                 // Cabeçalho (faixa vermelha da planilha)
                 Card(
-                  elevation: 4,
+                  elevation: isDark ? 2 : 4,
+                  surfaceTintColor: Colors.transparent,
                   shape: RoundedRectangleBorder(
                     borderRadius: BorderRadius.circular(8),
                   ),
                   clipBehavior: Clip.antiAlias,
                   child: Container(
-                    decoration: BoxDecoration(gradient: _primaryGradient),
+                    decoration: BoxDecoration(gradient: primaryGradient),
                     padding: const EdgeInsets.all(12),
                     child: Column(
                       children: [
@@ -384,9 +429,9 @@ class _FichaPacientePageState extends State<FichaPacientePage> {
                               ),
                               child: Text(
                                 'Idade: $age',
-                                style: const TextStyle(
+                                style: TextStyle(
                                   fontSize: 12,
-                                  color: Colors.white70,
+                                  color: Colors.white.withAlpha(214),
                                 ),
                               ),
                             );
@@ -398,9 +443,7 @@ class _FichaPacientePageState extends State<FichaPacientePage> {
                             initialValue: _selectedSexo,
                             decoration: InputDecoration(
                               filled: true,
-                              fillColor: Colors.white.withAlpha(
-                                (0.9 * 255).round(),
-                              ),
+                              fillColor: fieldFill,
                               contentPadding: const EdgeInsets.symmetric(
                                 horizontal: 10,
                                 vertical: 6,
@@ -473,10 +516,13 @@ class _FichaPacientePageState extends State<FichaPacientePage> {
 
                 // Card de Anamnese
                 Card(
-                  elevation: 3,
+                  elevation: isDark ? 1 : 3,
+                  color: colorScheme.surfaceContainerLow,
+                  surfaceTintColor: Colors.transparent,
                   shape: RoundedRectangleBorder(
                     borderRadius: BorderRadius.circular(8),
                   ),
+                  clipBehavior: Clip.antiAlias,
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.stretch,
                     children: [
@@ -484,7 +530,7 @@ class _FichaPacientePageState extends State<FichaPacientePage> {
                       Container(
                         padding: const EdgeInsets.symmetric(vertical: 8),
                         decoration: BoxDecoration(
-                          gradient: _primaryGradient,
+                          gradient: primaryGradient,
                           borderRadius: const BorderRadius.vertical(
                             top: Radius.circular(8),
                           ),
@@ -559,7 +605,8 @@ class _FichaPacientePageState extends State<FichaPacientePage> {
                     ),
                   ],
                 ),
-              ],
+                ],
+              ),
             ),
           ),
         ),
@@ -615,27 +662,34 @@ class _SectionField extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final colorScheme = theme.colorScheme;
+    final fieldFill = theme.brightness == Brightness.dark
+        ? colorScheme.surfaceContainerHighest
+        : Colors.white;
+
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Text(
           title,
-          style: const TextStyle(
+          style: TextStyle(
             fontWeight: FontWeight.bold,
-            color: Colors.black87,
+            color: colorScheme.onSurface,
           ),
         ),
         Text(
           subtitle,
-          style: TextStyle(color: Colors.grey.shade700, fontSize: 12),
+          style: TextStyle(color: colorScheme.onSurfaceVariant, fontSize: 12),
         ),
         const SizedBox(height: 6),
         TextFormField(
           controller: controller,
           maxLines: maxLines,
+          style: TextStyle(color: colorScheme.onSurface),
           decoration: InputDecoration(
             filled: true,
-            fillColor: Colors.white,
+            fillColor: fieldFill,
             isDense: true,
             contentPadding: const EdgeInsets.symmetric(
               horizontal: 10,
