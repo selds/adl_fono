@@ -1,5 +1,6 @@
 import 'package:adl_fono/adl.dart';
 import 'package:adl_fono/adl_protocol_page.dart';
+import 'package:adl_fono/admin/access_logs_page.dart';
 import 'package:adl_fono/admin/user_management_page.dart';
 import 'package:adl_fono/firebase_options.dart';
 import 'package:adl_fono/history_page.dart';
@@ -131,6 +132,26 @@ class _MainAppState extends State<MainApp> {
                   return _buildAccessDeniedPage(context);
                 }
                 return const UserManagementPage();
+              },
+            ),
+          );
+        },
+        '/admin/logs': (context) {
+          return SessionGuard(
+            child: FutureBuilder<AppUser?>(
+              future: AuthService.getCurrentUserProfile(),
+              builder: (context, snapshot) {
+                if (snapshot.connectionState == ConnectionState.waiting) {
+                  return const Scaffold(
+                    body: Center(child: CircularProgressIndicator()),
+                  );
+                }
+
+                final appUser = snapshot.data;
+                if (appUser == null || !appUser.isAdmin) {
+                  return _buildAccessDeniedPage(context);
+                }
+                return const AccessLogsPage();
               },
             ),
           );
