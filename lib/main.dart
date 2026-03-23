@@ -6,16 +6,20 @@ import 'package:adl_fono/history_page.dart';
 import 'package:adl_fono/home_page.dart';
 import 'package:adl_fono/login.dart';
 import 'package:adl_fono/models/adl_protocol.dart';
+import 'package:adl_fono/models/app_user.dart';
 import 'package:adl_fono/models/paciente_ficha.dart';
+import 'package:adl_fono/services/auth_service.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:flutter/material.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
   try {
-  await Firebase.initializeApp(options: DefaultFirebaseOptions.currentPlatform);
-  await FichaRepository.init();
-  await AdlProtocolRepository.init();
+    await Firebase.initializeApp(
+      options: DefaultFirebaseOptions.currentPlatform,
+    );
+    await FichaRepository.init();
+    await AdlProtocolRepository.init();
   } catch (e, stack) {
     debugPrint('Firebase init error: $e\n$stack');
   }
@@ -28,7 +32,7 @@ class MainApp extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
-      title: 'ADL Fonoaudiologia',
+      title: 'Avaliação do Desenvolvimento da Linguagem - 2',
       debugShowCheckedModeBanner: false,
       theme: ThemeData(primarySwatch: Colors.blue),
       initialRoute: '/login',
@@ -37,14 +41,15 @@ class MainApp extends StatelessWidget {
         '/': (context) {
           final args =
               ModalRoute.of(context)?.settings.arguments
-                                  as Map<String, dynamic>?;
+                  as Map<String, dynamic>?;
           return HomePage(userData: args);
         },
         '/anamnese': (_) => const FichaPacientePage(),
         '/history': (_) => const HistoryPage(),
         '/adl': (context) {
           final args =
-                      ModalRoute.of(context)!.settings.arguments as Map<String, dynamic>;
+              ModalRoute.of(context)!.settings.arguments
+                  as Map<String, dynamic>;
           final pacienteId = args['pacienteId']!;
           final protocolId = args['protocolId'];
           final protocol = protocolId == null
@@ -63,15 +68,22 @@ class MainApp extends StatelessWidget {
           );
         },
         '/admin': (context) {
-          final args =
-              ModalRoute.of(context)?.settings.arguments
-                  as Map<String, dynamic>?;
-          final isAdmin = args?['isAdmin'] as bool? ?? false;
+          return FutureBuilder<AppUser?>(
+            future: AuthService.getCurrentUserProfile(),
+            builder: (context, snapshot) {
+              if (snapshot.connectionState == ConnectionState.waiting) {
+                return const Scaffold(
+                  body: Center(child: CircularProgressIndicator()),
+                );
+              }
 
-          if (!isAdmin) {
-            return _buildAccessDeniedPage(context);
-          }
-          return const UserManagementPage();
+              final appUser = snapshot.data;
+              if (appUser == null || !appUser.isAdmin) {
+                return _buildAccessDeniedPage(context);
+              }
+              return const UserManagementPage();
+            },
+          );
         },
       },
     );
