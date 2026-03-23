@@ -18,10 +18,18 @@ service cloud.firestore {
       allow get: if signedIn() && (request.auth.uid == uid || isAdmin());
 
       // Usuário cria apenas o próprio documento, sem poder se auto-promover a admin.
-      allow create: if signedIn() &&
-          request.auth.uid == uid &&
-          request.resource.data.uid == request.auth.uid &&
-          request.resource.data.role == 'fonoaudiologo';
+      allow create: if signedIn() && (
+          (
+            request.auth.uid == uid &&
+            request.resource.data.uid == request.auth.uid &&
+            request.resource.data.role == 'fonoaudiologo'
+          ) ||
+          (
+            isAdmin() &&
+            request.resource.data.uid == uid &&
+            request.resource.data.role in ['admin', 'fonoaudiologo']
+          )
+        );
 
       // Admin pode alterar tudo; usuário comum só pode atualizar dados de perfil.
       allow update: if signedIn() && (
