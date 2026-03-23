@@ -72,7 +72,3 @@ icons/
 
 # Keep the checked-in wrapper that reads from GitHub Secrets/dart-defines
 !lib/firebase_options.dart
-firebase.json
-firestore.indexes.json
-firestore.rules
-firebase.json
