@@ -67,6 +67,13 @@ class AuthService {
       return snapshot.docs
           .map((doc) => AccessLogEntry.fromJson(doc.data()))
           .toList();
+    } on FirebaseException catch (e) {
+      if (e.code == 'permission-denied') {
+        throw Exception(
+          'Sem permissão para ler logs. Verifique se as regras do Firestore foram publicadas e se seu usuário é admin ativo.',
+        );
+      }
+      throw Exception('Erro ao buscar logs de acesso: ${e.message ?? e.code}');
     } catch (e) {
       throw Exception('Erro ao buscar logs de acesso: $e');
     }
