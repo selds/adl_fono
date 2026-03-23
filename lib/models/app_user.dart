@@ -54,7 +54,7 @@ class AppUser {
   factory AppUser.fromJson(Map<String, dynamic> json) => AppUser(
     uid: (json['uid'] as String?) ?? '',
     email: (json['email'] as String?) ?? '',
-    displayName: json['displayName'] as String?,
+    displayName: (json['displayName'] as String?) ?? (json['name'] as String?),
     photoUrl: json['photoUrl'] as String?,
     role: UserRole.fromString(json['role'] as String?),
     createdAt: _parseCreatedAt(json['createdAt']),
