@@ -1,5 +1,6 @@
 import 'package:adl_fono/services/auth_service.dart';
 import 'package:flutter/material.dart';
+import 'package:image_picker/image_picker.dart';
 
 class HomePage extends StatefulWidget {
   const HomePage({
@@ -17,7 +18,7 @@ class HomePage extends StatefulWidget {
   State<HomePage> createState() => _HomePageState();
 }
 
-class _HomePageState extends State<HomePage> {
+class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
   late Map<String, dynamic> _userData;
 
   Future<void> _refreshUserAccess() async {
@@ -102,6 +103,7 @@ class _HomePageState extends State<HomePage> {
   @override
   void initState() {
     super.initState();
+    WidgetsBinding.instance.addObserver(this);
     _userData =
         widget.userData ??
         {
@@ -113,21 +115,65 @@ class _HomePageState extends State<HomePage> {
           'isAdmin': false,
         };
 
-            _refreshUserAccess();
+    _refreshUserAccess();
   }
 
-  void _editProfile() {
-    showDialog<void>(
+  @override
+  void didUpdateWidget(covariant HomePage oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (oldWidget.userData != widget.userData && widget.userData != null) {
+      _userData = {..._userData, ...widget.userData!};
+      _refreshUserAccess();
+    }
+  }
+
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    if (state == AppLifecycleState.resumed) {
+      _refreshUserAccess();
+    }
+  }
+
+  @override
+  void dispose() {
+    WidgetsBinding.instance.removeObserver(this);
+    super.dispose();
+  }
+
+  Future<void> _showProfile() async {
+    await showDialog<void>(
       context: context,
-      builder: (context) => _EditProfileDialog(
-        initialData: _userData,
-        onSave: (updatedData) {
-          setState(() {
-            _userData = updatedData;
-          });
-        },
+      builder: (context) => _ProfileDialog(
+        profileData: _userData,
+        onEditPressed: _editProfile,
       ),
     );
+  }
+
+  Future<void> _editProfile() async {
+    final updatedData = await showDialog<Map<String, dynamic>>(
+      context: context,
+      builder: (context) => _EditProfileDialog(initialData: _userData),
+    );
+
+    if (updatedData == null) return;
+
+    try {
+      await AuthService.updateCurrentUserProfile(
+        displayName: updatedData['name'] as String,
+        photoUrl: updatedData['photo'] as String,
+      );
+      await _refreshUserAccess();
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Perfil atualizado com sucesso.')),
+      );
+    } catch (e) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Erro ao atualizar perfil: $e')),
+      );
+    }
   }
 
   @override
@@ -193,6 +239,16 @@ class _HomePageState extends State<HomePage> {
                             children: [
                               Row(
                                 children: [
+                                  CircleAvatar(
+                                    radius: 14,
+                                    backgroundImage: _userData['photo']!.isNotEmpty
+                                        ? NetworkImage(_userData['photo']!)
+                                        : null,
+                                    child: _userData['photo']!.isEmpty
+                                        ? const Icon(Icons.person, size: 14)
+                                        : null,
+                                  ),
+                                  const SizedBox(width: 8),
                                   Expanded(
                                     child: Text(
                                       'Bem-vindo, ${_userData['name']}',
@@ -203,9 +259,9 @@ class _HomePageState extends State<HomePage> {
                                     ),
                                   ),
                                   IconButton(
-                                    icon: const Icon(Icons.edit),
-                                    onPressed: _editProfile,
-                                    tooltip: 'Editar perfil',
+                                    icon: const Icon(Icons.person),
+                                    onPressed: _showProfile,
+                                    tooltip: 'Ver perfil',
                                   ),
                                 ],
                               ),
@@ -253,18 +309,18 @@ class _HomePageState extends State<HomePage> {
                       label: 'Acessar histórico',
                       icon: Icons.history,
                       color: const Color(0xFF764ba2),
-                      onTap: () => Navigator.of(context)
-                          .pushNamed('/history')
-                          .then((_) => _refreshUserAccess()),
+                      onTap: () => Navigator.of(
+                        context,
+                      ).pushNamed('/history').then((_) => _refreshUserAccess()),
                     ),
                     if (_userData['isAdmin'] == true)
                       _ActionCard(
                         label: 'Gerenciar usuários',
                         icon: Icons.admin_panel_settings,
                         color: const Color(0xFFFF6B6B),
-                        onTap: () => Navigator.of(context)
-                            .pushNamed('/admin')
-                            .then((_) => _refreshUserAccess()),
+                        onTap: () => Navigator.of(
+                          context,
+                        ).pushNamed('/admin').then((_) => _refreshUserAccess()),
                       ),
                     if (_userData['isAdmin'] == true)
                       _ActionCard(
@@ -287,20 +343,27 @@ class _HomePageState extends State<HomePage> {
 }
 
 class _EditProfileDialog extends StatefulWidget {
-  const _EditProfileDialog({required this.initialData, required this.onSave});
+  const _EditProfileDialog({required this.initialData});
 
   final Map<String, dynamic> initialData;
-  final void Function(Map<String, dynamic>) onSave;
 
   @override
   State<_EditProfileDialog> createState() => _EditProfileDialogState();
 }
 
 class _EditProfileDialogState extends State<_EditProfileDialog> {
+  static const int _maxUploadBytes = 5 * 1024 * 1024;
+  static const Set<String> _acceptedExtensions = {
+    'jpg',
+    'jpeg',
+    'png',
+    'webp',
+  };
+
   late final TextEditingController _nameController;
   late final TextEditingController _emailController;
   late final TextEditingController _photoController;
-  late final TextEditingController _roleController;
+  bool _uploadingPhoto = false;
 
   @override
   void initState() {
@@ -308,7 +371,6 @@ class _EditProfileDialogState extends State<_EditProfileDialog> {
     _nameController = TextEditingController(text: widget.initialData['name']);
     _emailController = TextEditingController(text: widget.initialData['email']);
     _photoController = TextEditingController(text: widget.initialData['photo']);
-    _roleController = TextEditingController(text: widget.initialData['role']);
   }
 
   @override
@@ -316,21 +378,89 @@ class _EditProfileDialogState extends State<_EditProfileDialog> {
     _nameController.dispose();
     _emailController.dispose();
     _photoController.dispose();
-    _roleController.dispose();
     super.dispose();
   }
 
   void _save() {
+    final rawPhoto = _photoController.text.trim();
+    if (rawPhoto.isNotEmpty) {
+      final uri = Uri.tryParse(rawPhoto);
+      final isHttp = uri != null && (uri.scheme == 'http' || uri.scheme == 'https');
+      if (!isHttp) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Informe uma URL válida (http/https).')),
+        );
+        return;
+      }
+    }
+
     final updatedData = {
       'name': _nameController.text.trim(),
       'email': _emailController.text.trim(),
-      'photo': _photoController.text.trim(),
-      'role': _roleController.text.trim(),
+      'photo': rawPhoto,
+      'role': widget.initialData['role'],
       'uid': widget.initialData['uid'],
       'isAdmin': widget.initialData['isAdmin'] ?? false,
     };
-    widget.onSave(updatedData);
-    Navigator.of(context).pop();
+    Navigator.of(context).pop(updatedData);
+  }
+
+  Future<void> _pickAndUploadPhoto() async {
+    try {
+      final picker = ImagePicker();
+      final selected = await picker.pickImage(
+        source: ImageSource.gallery,
+        maxWidth: 1080,
+        maxHeight: 1080,
+        imageQuality: 85,
+      );
+      if (selected == null) return;
+      if (!mounted) return;
+
+      final fileName = selected.name.trim().toLowerCase();
+      final extIndex = fileName.lastIndexOf('.');
+      final extension = extIndex == -1 ? '' : fileName.substring(extIndex + 1);
+      if (!_acceptedExtensions.contains(extension)) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text(
+              'Formato não suportado. Use JPG, JPEG, PNG ou WEBP.',
+            ),
+          ),
+        );
+        return;
+      }
+
+      final fileSize = await selected.length();
+      if (!mounted) return;
+      if (fileSize > _maxUploadBytes) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Arquivo muito grande. Tamanho máximo: 5 MB.'),
+          ),
+        );
+        return;
+      }
+
+      setState(() => _uploadingPhoto = true);
+      final url = await AuthService.uploadCurrentUserProfilePhoto(selected);
+      if (!mounted) return;
+      setState(() {
+        _photoController.text = url;
+      });
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Foto enviada com sucesso.')),
+      );
+    } catch (e) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Erro ao enviar foto: $e')),
+      );
+    } finally {
+      if (mounted) {
+        setState(() => _uploadingPhoto = false);
+      }
+    }
   }
 
   @override
@@ -341,6 +471,16 @@ class _EditProfileDialogState extends State<_EditProfileDialog> {
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
+            CircleAvatar(
+              radius: 32,
+              backgroundImage: _photoController.text.trim().isNotEmpty
+                  ? NetworkImage(_photoController.text.trim())
+                  : null,
+              child: _photoController.text.trim().isEmpty
+                  ? const Icon(Icons.person, size: 32)
+                  : null,
+            ),
+            const SizedBox(height: 16),
             TextFormField(
               controller: _nameController,
               decoration: const InputDecoration(labelText: 'Nome'),
@@ -350,18 +490,42 @@ class _EditProfileDialogState extends State<_EditProfileDialog> {
               controller: _emailController,
               decoration: const InputDecoration(labelText: 'E-mail'),
               keyboardType: TextInputType.emailAddress,
+              readOnly: true,
             ),
             const SizedBox(height: 16),
             TextFormField(
               controller: _photoController,
               decoration: const InputDecoration(
-                labelText: 'URL da Foto (opcional)',
+                labelText: 'URL da foto de perfil (opcional)',
+              ),
+              onChanged: (_) => setState(() {}),
+            ),
+            const SizedBox(height: 12),
+            SizedBox(
+              width: double.infinity,
+              child: OutlinedButton.icon(
+                onPressed: _uploadingPhoto ? null : _pickAndUploadPhoto,
+                icon: _uploadingPhoto
+                    ? const SizedBox(
+                        width: 16,
+                        height: 16,
+                        child: CircularProgressIndicator(strokeWidth: 2),
+                      )
+                    : const Icon(Icons.upload_file),
+                label: Text(
+                  _uploadingPhoto
+                      ? 'Enviando foto...'
+                      : 'Selecionar foto do dispositivo',
+                ),
               ),
             ),
-            const SizedBox(height: 16),
-            TextFormField(
-              controller: _roleController,
-              decoration: const InputDecoration(labelText: 'Cargo'),
+            const SizedBox(height: 8),
+            Text(
+              'Tipos aceitos: JPG, JPEG, PNG, WEBP. Tamanho máximo: 5 MB por upload.',
+              style: Theme.of(
+                context,
+              ).textTheme.bodySmall?.copyWith(color: Colors.grey),
+              textAlign: TextAlign.center,
             ),
           ],
         ),
@@ -372,6 +536,69 @@ class _EditProfileDialogState extends State<_EditProfileDialog> {
           child: const Text('Cancelar'),
         ),
         ElevatedButton(onPressed: _save, child: const Text('Salvar')),
+      ],
+    );
+  }
+}
+
+class _ProfileDialog extends StatelessWidget {
+  const _ProfileDialog({
+    required this.profileData,
+    required this.onEditPressed,
+  });
+
+  final Map<String, dynamic> profileData;
+  final Future<void> Function() onEditPressed;
+
+  @override
+  Widget build(BuildContext context) {
+    final photo = (profileData['photo'] as String?)?.trim() ?? '';
+    final role = (profileData['role'] as String?)?.trim() ?? '';
+
+    return AlertDialog(
+      title: const Text('Perfil'),
+      content: SingleChildScrollView(
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            CircleAvatar(
+              radius: 36,
+              backgroundImage: photo.isNotEmpty ? NetworkImage(photo) : null,
+              child: photo.isEmpty ? const Icon(Icons.person, size: 36) : null,
+            ),
+            const SizedBox(height: 16),
+            Text(
+              profileData['name'] as String? ?? 'Usuário',
+              style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+            ),
+            const SizedBox(height: 8),
+            Text(profileData['email'] as String? ?? ''),
+            if (role.isNotEmpty) ...[
+              const SizedBox(height: 8),
+              Text(
+                role,
+                style: const TextStyle(
+                  color: Colors.grey,
+                  fontStyle: FontStyle.italic,
+                ),
+              ),
+            ],
+          ],
+        ),
+      ),
+      actions: [
+        TextButton(
+          onPressed: () => Navigator.of(context).pop(),
+          child: const Text('Fechar'),
+        ),
+        ElevatedButton.icon(
+          onPressed: () async {
+            Navigator.of(context).pop();
+            await onEditPressed();
+          },
+          icon: const Icon(Icons.edit),
+          label: const Text('Editar perfil'),
+        ),
       ],
     );
   }
