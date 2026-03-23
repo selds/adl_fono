@@ -319,7 +319,9 @@ class _HistoryPageState extends State<HistoryPage> {
                     style: TextStyle(color: colorScheme.onSurface),
                     decoration: InputDecoration(
                       labelText: 'Buscar por nome',
-                      labelStyle: TextStyle(color: colorScheme.onSurfaceVariant),
+                      labelStyle: TextStyle(
+                        color: colorScheme.onSurfaceVariant,
+                      ),
                       prefixIcon: Icon(
                         Icons.search,
                         color: colorScheme.onSurfaceVariant,
@@ -328,7 +330,9 @@ class _HistoryPageState extends State<HistoryPage> {
                       fillColor: colorScheme.surfaceContainerHighest,
                       border: const OutlineInputBorder(),
                       enabledBorder: OutlineInputBorder(
-                        borderSide: BorderSide(color: colorScheme.outlineVariant),
+                        borderSide: BorderSide(
+                          color: colorScheme.outlineVariant,
+                        ),
                       ),
                       focusedBorder: OutlineInputBorder(
                         borderSide: BorderSide(
