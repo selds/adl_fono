@@ -37,14 +37,14 @@ class MainApp extends StatelessWidget {
         '/': (context) {
           final args =
               ModalRoute.of(context)?.settings.arguments
-                  as Map<String, String>?;
+                                  as Map<String, dynamic>?;
           return HomePage(userData: args);
         },
         '/anamnese': (_) => const FichaPacientePage(),
         '/history': (_) => const HistoryPage(),
         '/adl': (context) {
           final args =
-              ModalRoute.of(context)!.settings.arguments as Map<String, String>;
+                      ModalRoute.of(context)!.settings.arguments as Map<String, dynamic>;
           final pacienteId = args['pacienteId']!;
           final protocolId = args['protocolId'];
           final protocol = protocolId == null
