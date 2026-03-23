@@ -23,20 +23,34 @@ class AuthService {
       final user = credential.user;
       if (user == null) return null;
 
-      // Busca dados do usuário no Firestore
-      final appUser = await getUserByUid(user.uid);
-      return appUser ??
-          AppUser(
-            uid: user.uid,
-            email: user.email ?? '',
-            displayName: user.displayName,
-            photoUrl: user.photoURL,
-            role: UserRole.fonoaudiologo,
-            createdAt: user.metadata.creationTime ?? DateTime.now(),
-          );
+      // Garante perfil no Firestore e lê role persistida.
+      final appUser = await _ensureUserProfile(user);
+      return appUser;
     } on FirebaseAuthException {
       rethrow;
     }
+  }
+
+  static Future<AppUser> _ensureUserProfile(User user) async {
+    final email = (user.email ?? '').trim();
+
+    final userRef = _firestore.collection(_usersCollection).doc(user.uid);
+    final doc = await userRef.get();
+
+    if (!doc.exists) {
+      final createdUser = AppUser(
+        uid: user.uid,
+        email: email,
+        displayName: user.displayName,
+        photoUrl: user.photoURL,
+        role: UserRole.fonoaudiologo,
+        createdAt: user.metadata.creationTime ?? DateTime.now(),
+      );
+      await userRef.set(createdUser.toJson());
+      return createdUser;
+    }
+
+    return AppUser.fromJson(doc.data()!);
   }
 
   /// Retorna o usuário atualmente logado.
@@ -52,6 +66,13 @@ class AuthService {
       role: UserRole.fonoaudiologo,
       createdAt: user.metadata.creationTime ?? DateTime.now(),
     );
+  }
+
+  /// Retorna o perfil atual com role persistida no Firestore.
+  static Future<AppUser?> getCurrentUserProfile() async {
+    final user = _auth.currentUser;
+    if (user == null) return null;
+    return _ensureUserProfile(user);
   }
 
   /// Cria novo usuário com role especificado.
