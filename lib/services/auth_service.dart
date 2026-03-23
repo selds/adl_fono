@@ -110,12 +110,12 @@ class AuthService {
     final legacyName = (data['name'] as String?)?.trim() ?? '';
     final authDisplayName = (user.displayName ?? '').trim();
     final resolvedDisplayName = docDisplayName.isNotEmpty
-      ? docDisplayName
-      : (legacyName.isNotEmpty
-          ? legacyName
-          : (authDisplayName.isNotEmpty
-            ? authDisplayName
-            : _deriveDisplayNameFromEmail(email)));
+        ? docDisplayName
+        : (legacyName.isNotEmpty
+              ? legacyName
+              : (authDisplayName.isNotEmpty
+                    ? authDisplayName
+                    : _deriveDisplayNameFromEmail(email)));
     final docPhoto = (data['photoUrl'] as String?)?.trim() ?? '';
     final authPhoto = (user.photoURL ?? '').trim();
     final resolvedPhotoUrl = docPhoto.isNotEmpty ? docPhoto : authPhoto;
@@ -142,7 +142,7 @@ class AuthService {
     final needsPatch =
         data['uid'] is! String ||
         data['email'] is! String ||
-      docDisplayName.isEmpty ||
+        docDisplayName.isEmpty ||
         data['role'] is! String ||
         data['createdAt'] == null ||
         data['isActive'] is! bool;
@@ -313,10 +313,10 @@ class AuthService {
         role: role,
         createdAt: DateTime.now(),
       );
-      await _firestore
-          .collection(_usersCollection)
-          .doc(user.uid)
-          .set({...appUser.toJson(), 'name': displayName});
+      await _firestore.collection(_usersCollection).doc(user.uid).set({
+        ...appUser.toJson(),
+        'name': displayName,
+      });
     } on FirebaseAuthException {
       rethrow;
     } finally {
