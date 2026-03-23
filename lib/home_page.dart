@@ -2,9 +2,16 @@ import 'package:adl_fono/services/auth_service.dart';
 import 'package:flutter/material.dart';
 
 class HomePage extends StatefulWidget {
-  const HomePage({super.key, this.userData});
+  const HomePage({
+    super.key,
+    this.userData,
+    required this.currentThemeMode,
+    required this.onThemeModeChanged,
+  });
 
   final Map<String, dynamic>? userData;
+  final ThemeMode currentThemeMode;
+  final Future<void> Function(ThemeMode mode) onThemeModeChanged;
 
   @override
   State<HomePage> createState() => _HomePageState();
@@ -12,6 +19,69 @@ class HomePage extends StatefulWidget {
 
 class _HomePageState extends State<HomePage> {
   late Map<String, dynamic> _userData;
+
+  Future<void> _showThemeModeDialog() async {
+    ThemeMode selected = widget.currentThemeMode;
+
+    await showDialog<void>(
+      context: context,
+      builder: (dialogContext) {
+        return StatefulBuilder(
+          builder: (dialogContext, setDialogState) {
+            return AlertDialog(
+              title: const Text('Tema da interface'),
+              content: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  RadioListTile<ThemeMode>(
+                    title: const Text('Claro'),
+                    value: ThemeMode.light,
+                    groupValue: selected,
+                    onChanged: (value) {
+                      if (value == null) return;
+                      setDialogState(() => selected = value);
+                    },
+                  ),
+                  RadioListTile<ThemeMode>(
+                    title: const Text('Escuro'),
+                    value: ThemeMode.dark,
+                    groupValue: selected,
+                    onChanged: (value) {
+                      if (value == null) return;
+                      setDialogState(() => selected = value);
+                    },
+                  ),
+                  RadioListTile<ThemeMode>(
+                    title: const Text('Seguir dispositivo'),
+                    value: ThemeMode.system,
+                    groupValue: selected,
+                    onChanged: (value) {
+                      if (value == null) return;
+                      setDialogState(() => selected = value);
+                    },
+                  ),
+                ],
+              ),
+              actions: [
+                TextButton(
+                  onPressed: () => Navigator.of(dialogContext).pop(),
+                  child: const Text('Cancelar'),
+                ),
+                ElevatedButton(
+                  onPressed: () async {
+                    await widget.onThemeModeChanged(selected);
+                    if (!mounted) return;
+                    Navigator.of(dialogContext).pop();
+                  },
+                  child: const Text('Aplicar'),
+                ),
+              ],
+            );
+          },
+        );
+      },
+    );
+  }
 
   @override
   void initState() {
@@ -49,6 +119,11 @@ class _HomePageState extends State<HomePage> {
         title: const Text('Avaliação do Desenvolvimento da Linguagem 2 - ADL'),
         centerTitle: true,
         actions: [
+          IconButton(
+            icon: const Icon(Icons.brightness_6),
+            tooltip: 'Alterar tema',
+            onPressed: _showThemeModeDialog,
+          ),
           IconButton(
             icon: const Icon(Icons.logout),
             tooltip: 'Sair',
