@@ -69,9 +69,10 @@ class _HomePageState extends State<HomePage> {
                 ),
                 ElevatedButton(
                   onPressed: () async {
+                    final nav = Navigator.of(dialogContext);
                     await widget.onThemeModeChanged(selected);
-                    if (!mounted) return;
-                    Navigator.of(dialogContext).pop();
+                    if (!nav.mounted) return;
+                    nav.pop();
                   },
                   child: const Text('Aplicar'),
                 ),
@@ -241,6 +242,14 @@ class _HomePageState extends State<HomePage> {
                         icon: Icons.admin_panel_settings,
                         color: const Color(0xFFFF6B6B),
                         onTap: () => Navigator.of(context).pushNamed('/admin'),
+                      ),
+                    if (_userData['isAdmin'] == true)
+                      _ActionCard(
+                        label: 'Logs de acesso',
+                        icon: Icons.fact_check,
+                        color: const Color(0xFF2E7D32),
+                        onTap: () =>
+                            Navigator.of(context).pushNamed('/admin/logs'),
                       ),
                   ],
                 ),
