@@ -12,9 +12,13 @@ import 'package:flutter/material.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
+  try {
   await Firebase.initializeApp(options: DefaultFirebaseOptions.currentPlatform);
   await FichaRepository.init();
   await AdlProtocolRepository.init();
+  } catch (e, stack) {
+    debugPrint('Firebase init error: $e\n$stack');
+  }
   runApp(const MainApp());
 }
 
