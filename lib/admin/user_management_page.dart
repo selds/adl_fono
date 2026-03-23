@@ -173,7 +173,7 @@ class _UserManagementPageState extends State<UserManagementPage> {
                 const SizedBox(height: 16),
                 Text('UID: ${user.uid}'),
                 const SizedBox(height: 16),
-                const Text('Role:'),
+                const Text('Função:'),
                 const SizedBox(height: 8),
                 DropdownButton<UserRole>(
                   value: selectedRole,
