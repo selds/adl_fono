@@ -382,229 +382,232 @@ class _FichaPacientePageState extends State<FichaPacientePage> {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.stretch,
                 children: [
-                // Cabeçalho (faixa vermelha da planilha)
-                Card(
-                  elevation: isDark ? 2 : 4,
-                  surfaceTintColor: Colors.transparent,
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(8),
-                  ),
-                  clipBehavior: Clip.antiAlias,
-                  child: Container(
-                    decoration: BoxDecoration(gradient: primaryGradient),
-                    padding: const EdgeInsets.all(12),
-                    child: Column(
-                      children: [
-                        _HeaderRow(
-                          label: 'Nome da Criança',
-                          child: _buildEditableField(_nomeCriancaController),
-                        ),
-                        const SizedBox(height: 8),
-                        _HeaderRow(
-                          label: 'Data de Nascimento',
-                          child: _buildEditableField(
-                            _dataNascController,
-                            hintText: 'dd/MM/yyyy',
-                            onTap: () =>
-                                _selectDate(context, _dataNasc, (date) {
-                                  setState(() {
-                                    _dataNasc = date;
-                                    _dataNascController.text = DateFormat(
-                                      'dd/MM/yyyy',
-                                    ).format(date);
-                                  });
-                                }),
-                            inputFormatters: [_dateMask],
+                  // Cabeçalho (faixa vermelha da planilha)
+                  Card(
+                    elevation: isDark ? 2 : 4,
+                    surfaceTintColor: Colors.transparent,
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(8),
+                    ),
+                    clipBehavior: Clip.antiAlias,
+                    child: Container(
+                      decoration: BoxDecoration(gradient: primaryGradient),
+                      padding: const EdgeInsets.all(12),
+                      child: Column(
+                        children: [
+                          _HeaderRow(
+                            label: 'Nome da Criança',
+                            child: _buildEditableField(_nomeCriancaController),
                           ),
-                        ),
-                        const SizedBox(height: 6),
-                        Builder(
-                          builder: (context) {
-                            final age = _calculateAge(_dataNascController.text);
-                            if (age.isEmpty) return const SizedBox.shrink();
-                            return Padding(
-                              padding: const EdgeInsets.only(
-                                left: 148.0,
-                                bottom: 8,
-                              ),
-                              child: Text(
-                                'Idade: $age',
-                                style: TextStyle(
-                                  fontSize: 12,
-                                  color: Colors.white.withAlpha(214),
-                                ),
-                              ),
-                            );
-                          },
-                        ),
-                        _HeaderRow(
-                          label: 'Sexo',
-                          child: DropdownButtonFormField<String>(
-                            initialValue: _selectedSexo,
-                            decoration: InputDecoration(
-                              filled: true,
-                              fillColor: fieldFill,
-                              contentPadding: const EdgeInsets.symmetric(
-                                horizontal: 10,
-                                vertical: 6,
-                              ),
-                              border: OutlineInputBorder(
-                                borderRadius: BorderRadius.circular(4),
-                              ),
+                          const SizedBox(height: 8),
+                          _HeaderRow(
+                            label: 'Data de Nascimento',
+                            child: _buildEditableField(
+                              _dataNascController,
+                              hintText: 'dd/MM/yyyy',
+                              onTap: () =>
+                                  _selectDate(context, _dataNasc, (date) {
+                                    setState(() {
+                                      _dataNasc = date;
+                                      _dataNascController.text = DateFormat(
+                                        'dd/MM/yyyy',
+                                      ).format(date);
+                                    });
+                                  }),
+                              inputFormatters: [_dateMask],
                             ),
-                            items: const [
-                              DropdownMenuItem(
-                                value: 'Masculino',
-                                child: Text('Masculino'),
-                              ),
-                              DropdownMenuItem(
-                                value: 'Feminino',
-                                child: Text('Feminino'),
-                              ),
-                            ],
-                            onChanged: (value) {
-                              setState(() {
-                                _selectedSexo = value;
-                              });
+                          ),
+                          const SizedBox(height: 6),
+                          Builder(
+                            builder: (context) {
+                              final age = _calculateAge(
+                                _dataNascController.text,
+                              );
+                              if (age.isEmpty) return const SizedBox.shrink();
+                              return Padding(
+                                padding: const EdgeInsets.only(
+                                  left: 148.0,
+                                  bottom: 8,
+                                ),
+                                child: Text(
+                                  'Idade: $age',
+                                  style: TextStyle(
+                                    fontSize: 12,
+                                    color: Colors.white.withAlpha(214),
+                                  ),
+                                ),
+                              );
                             },
                           ),
-                        ),
-                        const SizedBox(height: 8),
-                        _HeaderRow(
-                          label: 'Diagnóstico',
-                          child: _buildEditableField(_diagnosticoController),
-                        ),
-                        const SizedBox(height: 8),
-                        _HeaderRow(
-                          label: 'Responsável',
-                          child: _buildEditableField(_responsavelController),
-                        ),
-                        const SizedBox(height: 8),
-                        _HeaderRow(
-                          label: 'Data da Avaliação',
-                          child: _buildEditableField(
-                            _dataAvaliacaoController,
-                            hintText: 'dd/MM/yyyy',
-                            onTap: () =>
-                                _selectDate(context, _dataAvaliacao, (date) {
-                                  setState(() {
-                                    _dataAvaliacao = date;
-                                    _dataAvaliacaoController.text = DateFormat(
-                                      'dd/MM/yyyy',
-                                    ).format(date);
-                                  });
-                                }),
-                            inputFormatters: [_dateMask],
+                          _HeaderRow(
+                            label: 'Sexo',
+                            child: DropdownButtonFormField<String>(
+                              initialValue: _selectedSexo,
+                              decoration: InputDecoration(
+                                filled: true,
+                                fillColor: fieldFill,
+                                contentPadding: const EdgeInsets.symmetric(
+                                  horizontal: 10,
+                                  vertical: 6,
+                                ),
+                                border: OutlineInputBorder(
+                                  borderRadius: BorderRadius.circular(4),
+                                ),
+                              ),
+                              items: const [
+                                DropdownMenuItem(
+                                  value: 'Masculino',
+                                  child: Text('Masculino'),
+                                ),
+                                DropdownMenuItem(
+                                  value: 'Feminino',
+                                  child: Text('Feminino'),
+                                ),
+                              ],
+                              onChanged: (value) {
+                                setState(() {
+                                  _selectedSexo = value;
+                                });
+                              },
+                            ),
+                          ),
+                          const SizedBox(height: 8),
+                          _HeaderRow(
+                            label: 'Diagnóstico',
+                            child: _buildEditableField(_diagnosticoController),
+                          ),
+                          const SizedBox(height: 8),
+                          _HeaderRow(
+                            label: 'Responsável',
+                            child: _buildEditableField(_responsavelController),
+                          ),
+                          const SizedBox(height: 8),
+                          _HeaderRow(
+                            label: 'Data da Avaliação',
+                            child: _buildEditableField(
+                              _dataAvaliacaoController,
+                              hintText: 'dd/MM/yyyy',
+                              onTap: () =>
+                                  _selectDate(context, _dataAvaliacao, (date) {
+                                    setState(() {
+                                      _dataAvaliacao = date;
+                                      _dataAvaliacaoController.text =
+                                          DateFormat('dd/MM/yyyy').format(date);
+                                    });
+                                  }),
+                              inputFormatters: [_dateMask],
+                            ),
+                          ),
+                          const SizedBox(height: 8),
+                          _HeaderRow(
+                            label: 'Avaliador(a)',
+                            child: _buildEditableField(_avaliadorController),
+                          ),
+                          const SizedBox(height: 8),
+                          _HeaderRow(
+                            label: 'Especialidade',
+                            child: _buildEditableField(
+                              _especialidadeController,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ),
+
+                  const SizedBox(height: 12),
+
+                  // Card de Anamnese
+                  Card(
+                    elevation: isDark ? 1 : 3,
+                    color: colorScheme.surfaceContainerLow,
+                    surfaceTintColor: Colors.transparent,
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(8),
+                    ),
+                    clipBehavior: Clip.antiAlias,
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.stretch,
+                      children: [
+                        // Título ANAMNESE com gradiente
+                        Container(
+                          padding: const EdgeInsets.symmetric(vertical: 8),
+                          decoration: BoxDecoration(
+                            gradient: primaryGradient,
+                            borderRadius: const BorderRadius.vertical(
+                              top: Radius.circular(8),
+                            ),
+                          ),
+                          alignment: Alignment.center,
+                          child: const Text(
+                            'ANAMNESE',
+                            style: TextStyle(
+                              color: Colors.white,
+                              fontWeight: FontWeight.bold,
+                              letterSpacing: 1.2,
+                            ),
                           ),
                         ),
-                        const SizedBox(height: 8),
-                        _HeaderRow(
-                          label: 'Avaliador(a)',
-                          child: _buildEditableField(_avaliadorController),
-                        ),
-                        const SizedBox(height: 8),
-                        _HeaderRow(
-                          label: 'Especialidade',
-                          child: _buildEditableField(_especialidadeController),
+                        Padding(
+                          padding: const EdgeInsets.all(12),
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.stretch,
+                            children: [
+                              _SectionField(
+                                title: 'ATIVIDADES',
+                                subtitle:
+                                    'Descreva as principais atividades que a criança executa atualmente...',
+                                controller: _atividadesController,
+                                maxLines: 3,
+                              ),
+                              const SizedBox(height: 12),
+                              _SectionField(
+                                title: 'AMBIENTE FAMILIAR',
+                                subtitle:
+                                    'Quem mora na casa? Ex.: pai, mãe, irmãos...',
+                                controller: _ambienteController,
+                                maxLines: 2,
+                              ),
+                              const SizedBox(height: 12),
+                              _SectionField(
+                                title: 'DEMANDA FAMILIAR',
+                                subtitle:
+                                    'Descreva as principais demandas da família. Ex.: atraso de linguagem...',
+                                controller: _demandaController,
+                                maxLines: 3,
+                              ),
+                            ],
+                          ),
                         ),
                       ],
                     ),
                   ),
-                ),
-
-                const SizedBox(height: 12),
-
-                // Card de Anamnese
-                Card(
-                  elevation: isDark ? 1 : 3,
-                  color: colorScheme.surfaceContainerLow,
-                  surfaceTintColor: Colors.transparent,
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(8),
-                  ),
-                  clipBehavior: Clip.antiAlias,
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.stretch,
+                  const SizedBox(height: 16),
+                  Row(
                     children: [
-                      // Título ANAMNESE com gradiente
-                      Container(
-                        padding: const EdgeInsets.symmetric(vertical: 8),
-                        decoration: BoxDecoration(
-                          gradient: primaryGradient,
-                          borderRadius: const BorderRadius.vertical(
-                            top: Radius.circular(8),
-                          ),
-                        ),
-                        alignment: Alignment.center,
-                        child: const Text(
-                          'ANAMNESE',
-                          style: TextStyle(
-                            color: Colors.white,
-                            fontWeight: FontWeight.bold,
-                            letterSpacing: 1.2,
+                      Expanded(
+                        child: ElevatedButton(
+                          onPressed: _saveFicha,
+                          child: const Padding(
+                            padding: EdgeInsets.symmetric(vertical: 12),
+                            child: Text('Salvar'),
                           ),
                         ),
                       ),
-                      Padding(
-                        padding: const EdgeInsets.all(12),
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.stretch,
-                          children: [
-                            _SectionField(
-                              title: 'ATIVIDADES',
-                              subtitle:
-                                  'Descreva as principais atividades que a criança executa atualmente...',
-                              controller: _atividadesController,
-                              maxLines: 3,
-                            ),
-                            const SizedBox(height: 12),
-                            _SectionField(
-                              title: 'AMBIENTE FAMILIAR',
-                              subtitle:
-                                  'Quem mora na casa? Ex.: pai, mãe, irmãos...',
-                              controller: _ambienteController,
-                              maxLines: 2,
-                            ),
-                            const SizedBox(height: 12),
-                            _SectionField(
-                              title: 'DEMANDA FAMILIAR',
-                              subtitle:
-                                  'Descreva as principais demandas da família. Ex.: atraso de linguagem...',
-                              controller: _demandaController,
-                              maxLines: 3,
-                            ),
-                          ],
+                      const SizedBox(width: 12),
+                      Expanded(
+                        child: OutlinedButton(
+                          onPressed: () {
+                            Navigator.of(context).pushNamed('/history');
+                          },
+                          child: const Padding(
+                            padding: EdgeInsets.symmetric(vertical: 12),
+                            child: Text('Histórico'),
+                          ),
                         ),
                       ),
                     ],
                   ),
-                ),
-                const SizedBox(height: 16),
-                Row(
-                  children: [
-                    Expanded(
-                      child: ElevatedButton(
-                        onPressed: _saveFicha,
-                        child: const Padding(
-                          padding: EdgeInsets.symmetric(vertical: 12),
-                          child: Text('Salvar'),
-                        ),
-                      ),
-                    ),
-                    const SizedBox(width: 12),
-                    Expanded(
-                      child: OutlinedButton(
-                        onPressed: () {
-                          Navigator.of(context).pushNamed('/history');
-                        },
-                        child: const Padding(
-                          padding: EdgeInsets.symmetric(vertical: 12),
-                          child: Text('Histórico'),
-                        ),
-                      ),
-                    ),
-                  ],
-                ),
                 ],
               ),
             ),
