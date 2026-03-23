@@ -47,6 +47,36 @@ Este aplicativo permite o cadastro, edição e visualização de fichas de pacie
 - **Histórico**: Acesse via o menu para visualizar, buscar, editar ou excluir registros.
 - **Perfil**: Página simples com informações do usuário (placeholder).
 
+## Administração de Usuários
+
+- O acesso à tela de gerenciamento de usuários depende do campo `role` no documento do usuário em `users/{uid}` no Firestore.
+- Valores aceitos para `role`:
+   - `admin`
+   - `fonoaudiologo`
+- Para promover um usuário existente para admin:
+   - Abra o Firebase Console.
+   - Vá em Firestore Database > coleção `users`.
+   - Encontre o documento do usuário (UID do Firebase Auth).
+   - Atualize o campo `role` para `admin`.
+   - Faça logout/login no app para atualizar o estado local.
+
+### Regras de segurança (Firestore)
+
+- Arquivo de regras: `firestore.rules`
+- Deploy das regras:
+   ```bash
+   firebase deploy --only firestore:rules
+   ```
+- As regras atuais garantem:
+   - Apenas `admin` pode alterar `role` e `isActive` de outros usuários.
+   - Usuário comum não consegue se auto-promover para `admin`.
+   - Leitura de perfis limitada ao próprio usuário e admins.
+
+### Bootstrap do primeiro admin
+
+- Em projeto novo, defina manualmente o primeiro admin no Firebase Console (Firestore > `users/{uid}` > `role = admin`).
+- Depois disso, admins podem gerenciar os demais usuários pela interface.
+
 ## Estrutura do Projeto
 
 - `lib/main.dart`: Ponto de entrada e navegação.
