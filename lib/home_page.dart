@@ -143,10 +143,8 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
   Future<void> _showProfile() async {
     await showDialog<void>(
       context: context,
-      builder: (context) => _ProfileDialog(
-        profileData: _userData,
-        onEditPressed: _editProfile,
-      ),
+      builder: (context) =>
+          _ProfileDialog(profileData: _userData, onEditPressed: _editProfile),
     );
   }
 
@@ -170,9 +168,9 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
       );
     } catch (e) {
       if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Erro ao atualizar perfil: $e')),
-      );
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text('Erro ao atualizar perfil: $e')));
     }
   }
 
@@ -241,7 +239,8 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
                                 children: [
                                   CircleAvatar(
                                     radius: 14,
-                                    backgroundImage: _userData['photo']!.isNotEmpty
+                                    backgroundImage:
+                                        _userData['photo']!.isNotEmpty
                                         ? NetworkImage(_userData['photo']!)
                                         : null,
                                     child: _userData['photo']!.isEmpty
@@ -353,12 +352,7 @@ class _EditProfileDialog extends StatefulWidget {
 
 class _EditProfileDialogState extends State<_EditProfileDialog> {
   static const int _maxUploadBytes = 5 * 1024 * 1024;
-  static const Set<String> _acceptedExtensions = {
-    'jpg',
-    'jpeg',
-    'png',
-    'webp',
-  };
+  static const Set<String> _acceptedExtensions = {'jpg', 'jpeg', 'png', 'webp'};
 
   late final TextEditingController _nameController;
   late final TextEditingController _emailController;
@@ -385,7 +379,8 @@ class _EditProfileDialogState extends State<_EditProfileDialog> {
     final rawPhoto = _photoController.text.trim();
     if (rawPhoto.isNotEmpty) {
       final uri = Uri.tryParse(rawPhoto);
-      final isHttp = uri != null && (uri.scheme == 'http' || uri.scheme == 'https');
+      final isHttp =
+          uri != null && (uri.scheme == 'http' || uri.scheme == 'https');
       if (!isHttp) {
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(content: Text('Informe uma URL válida (http/https).')),
@@ -423,9 +418,7 @@ class _EditProfileDialogState extends State<_EditProfileDialog> {
       if (!_acceptedExtensions.contains(extension)) {
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(
-            content: Text(
-              'Formato não suportado. Use JPG, JPEG, PNG ou WEBP.',
-            ),
+            content: Text('Formato não suportado. Use JPG, JPEG, PNG ou WEBP.'),
           ),
         );
         return;
@@ -453,9 +446,9 @@ class _EditProfileDialogState extends State<_EditProfileDialog> {
       );
     } catch (e) {
       if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Erro ao enviar foto: $e')),
-      );
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text('Erro ao enviar foto: $e')));
     } finally {
       if (mounted) {
         setState(() => _uploadingPhoto = false);
