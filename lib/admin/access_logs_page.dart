@@ -26,9 +26,7 @@ class _AccessLogsPageState extends State<AccessLogsPage> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(
-        title: const Text('Logs de Acesso'),
-      ),
+      appBar: AppBar(title: const Text('Logs de Acesso')),
       body: FutureBuilder<List<AccessLogEntry>>(
         future: _logsFuture,
         builder: (context, snapshot) {
@@ -64,9 +62,7 @@ class _AccessLogsPageState extends State<AccessLogsPage> {
 
           final logs = snapshot.data ?? const <AccessLogEntry>[];
           if (logs.isEmpty) {
-            return const Center(
-              child: Text('Nenhum login registrado ainda.'),
-            );
+            return const Center(child: Text('Nenhum login registrado ainda.'));
           }
 
           return RefreshIndicator(
@@ -95,7 +91,9 @@ class _AccessLogsPageState extends State<AccessLogsPage> {
                             : Icons.person,
                       ),
                     ),
-                    title: Text(log.displayName.isEmpty ? log.email : log.displayName),
+                    title: Text(
+                      log.displayName.isEmpty ? log.email : log.displayName,
+                    ),
                     subtitle: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
