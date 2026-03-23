@@ -30,37 +30,29 @@ class _HomePageState extends State<HomePage> {
           builder: (dialogContext, setDialogState) {
             return AlertDialog(
               title: const Text('Tema da interface'),
-              content: Column(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  RadioListTile<ThemeMode>(
-                    title: const Text('Claro'),
-                    value: ThemeMode.light,
-                    groupValue: selected,
-                    onChanged: (value) {
-                      if (value == null) return;
-                      setDialogState(() => selected = value);
-                    },
-                  ),
-                  RadioListTile<ThemeMode>(
-                    title: const Text('Escuro'),
-                    value: ThemeMode.dark,
-                    groupValue: selected,
-                    onChanged: (value) {
-                      if (value == null) return;
-                      setDialogState(() => selected = value);
-                    },
-                  ),
-                  RadioListTile<ThemeMode>(
-                    title: const Text('Seguir dispositivo'),
-                    value: ThemeMode.system,
-                    groupValue: selected,
-                    onChanged: (value) {
-                      if (value == null) return;
-                      setDialogState(() => selected = value);
-                    },
-                  ),
-                ],
+              content: RadioGroup<ThemeMode>(
+                groupValue: selected,
+                onChanged: (value) {
+                  if (value == null) return;
+                  setDialogState(() => selected = value);
+                },
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: const [
+                    RadioListTile<ThemeMode>(
+                      title: Text('Claro'),
+                      value: ThemeMode.light,
+                    ),
+                    RadioListTile<ThemeMode>(
+                      title: Text('Escuro'),
+                      value: ThemeMode.dark,
+                    ),
+                    RadioListTile<ThemeMode>(
+                      title: Text('Seguir dispositivo'),
+                      value: ThemeMode.system,
+                    ),
+                  ],
+                ),
               ),
               actions: [
                 TextButton(
