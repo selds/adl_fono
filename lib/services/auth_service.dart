@@ -183,9 +183,7 @@ class AuthService {
 
     // Mantém Firestore e perfil do Firebase Auth alinhados para exibição.
     await user.updateDisplayName(normalizedName);
-    await user.updatePhotoURL(
-      normalizedPhoto.isEmpty ? null : normalizedPhoto,
-    );
+    await user.updatePhotoURL(normalizedPhoto.isEmpty ? null : normalizedPhoto);
 
     await _firestore.collection(_usersCollection).doc(user.uid).set({
       'uid': user.uid,
