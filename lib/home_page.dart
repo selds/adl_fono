@@ -165,9 +165,7 @@ class _HomePageState extends State<HomePage> {
                         label: 'Gerenciar usuários',
                         icon: Icons.admin_panel_settings,
                         color: const Color(0xFFFF6B6B),
-                        onTap: () => Navigator.of(
-                          context,
-                        ).pushNamed('/admin', arguments: {'isAdmin': true}),
+                        onTap: () => Navigator.of(context).pushNamed('/admin'),
                       ),
                   ],
                 ),
