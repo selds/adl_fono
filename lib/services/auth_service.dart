@@ -3,7 +3,9 @@ import 'package:adl_fono/models/app_user.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:firebase_core/firebase_core.dart';
+import 'package:firebase_storage/firebase_storage.dart';
 import 'package:adl_fono/firebase_options.dart';
+import 'package:image_picker/image_picker.dart';
 
 /// Serviço centralizado para gerenciar autenticação e usuários.
 class AuthService {
@@ -11,6 +13,7 @@ class AuthService {
 
   static final _auth = FirebaseAuth.instance;
   static final _firestore = FirebaseFirestore.instance;
+  static final _storage = FirebaseStorage.instance;
   static const _usersCollection = 'users';
   static const _accessLogsCollection = 'access_logs';
 
@@ -159,6 +162,92 @@ class AuthService {
     final user = _auth.currentUser;
     if (user == null) return null;
     return _ensureUserProfile(user);
+  }
+
+  /// Atualiza dados básicos do perfil do usuário atual.
+  static Future<void> updateCurrentUserProfile({
+    required String displayName,
+    String? photoUrl,
+  }) async {
+    final user = _auth.currentUser;
+    if (user == null) {
+      throw Exception('Nenhum usuário autenticado.');
+    }
+
+    final normalizedName = displayName.trim();
+    final normalizedPhoto = (photoUrl ?? '').trim();
+
+    if (normalizedName.isEmpty) {
+      throw Exception('Nome não pode ficar vazio.');
+    }
+
+    // Mantém Firestore e perfil do Firebase Auth alinhados para exibição.
+    await user.updateDisplayName(normalizedName);
+    await user.updatePhotoURL(
+      normalizedPhoto.isEmpty ? null : normalizedPhoto,
+    );
+
+    await _firestore.collection(_usersCollection).doc(user.uid).set({
+      'uid': user.uid,
+      'displayName': normalizedName,
+      'photoUrl': normalizedPhoto,
+      'email': user.email ?? '',
+      'updatedAt': Timestamp.now(),
+    }, SetOptions(merge: true));
+  }
+
+  /// Faz upload da foto de perfil do usuário atual e retorna a URL pública.
+  static Future<String> uploadCurrentUserProfilePhoto(XFile file) async {
+    final user = _auth.currentUser;
+    if (user == null) {
+      throw Exception('Nenhum usuário autenticado.');
+    }
+
+    final bytes = await file.readAsBytes();
+    if (bytes.isEmpty) {
+      throw Exception('Arquivo de imagem inválido.');
+    }
+
+    final extension = _extensionFromName(file.name);
+    final path = 'profile_photos/${user.uid}/avatar_$extension';
+    final ref = _storage.ref().child(path);
+
+    final metadata = SettableMetadata(
+      contentType: _contentTypeForExtension(extension),
+      customMetadata: {
+        'uid': user.uid,
+        'uploadedAt': DateTime.now().toIso8601String(),
+      },
+    );
+
+    await ref.putData(bytes, metadata);
+    return ref.getDownloadURL();
+  }
+
+  static String _extensionFromName(String name) {
+    final normalized = name.trim().toLowerCase();
+    final idx = normalized.lastIndexOf('.');
+    if (idx == -1 || idx == normalized.length - 1) {
+      return 'jpg';
+    }
+    final ext = normalized.substring(idx + 1);
+    if (ext == 'jpeg' || ext == 'jpg' || ext == 'png' || ext == 'webp') {
+      return ext;
+    }
+    return 'jpg';
+  }
+
+  static String _contentTypeForExtension(String ext) {
+    switch (ext) {
+      case 'png':
+        return 'image/png';
+      case 'webp':
+        return 'image/webp';
+      case 'jpeg':
+      case 'jpg':
+      default:
+        return 'image/jpeg';
+    }
   }
 
   /// Cria novo usuário com role especificado.
