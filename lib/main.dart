@@ -9,6 +9,7 @@ import 'package:adl_fono/models/adl_protocol.dart';
 import 'package:adl_fono/models/app_user.dart';
 import 'package:adl_fono/models/paciente_ficha.dart';
 import 'package:adl_fono/services/auth_service.dart';
+import 'package:adl_fono/services/theme_service.dart';
 import 'package:adl_fono/widgets/session_guard.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:flutter/material.dart';
@@ -27,15 +28,51 @@ void main() async {
   runApp(const MainApp());
 }
 
-class MainApp extends StatelessWidget {
+class MainApp extends StatefulWidget {
   const MainApp({super.key});
+
+  @override
+  State<MainApp> createState() => _MainAppState();
+}
+
+class _MainAppState extends State<MainApp> {
+  ThemeMode _themeMode = ThemeMode.system;
+
+  @override
+  void initState() {
+    super.initState();
+    _loadThemeMode();
+  }
+
+  Future<void> _loadThemeMode() async {
+    final mode = await ThemeService.loadThemeMode();
+    if (!mounted) return;
+    setState(() => _themeMode = mode);
+  }
+
+  Future<void> _setThemeMode(ThemeMode mode) async {
+    if (_themeMode == mode) return;
+    setState(() => _themeMode = mode);
+    await ThemeService.saveThemeMode(mode);
+  }
 
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
       title: 'Avaliação do Desenvolvimento da Linguagem - 2',
       debugShowCheckedModeBanner: false,
-      theme: ThemeData(primarySwatch: Colors.blue),
+      theme: ThemeData(
+        colorScheme: ColorScheme.fromSeed(seedColor: Colors.blue),
+        useMaterial3: true,
+      ),
+      darkTheme: ThemeData(
+        colorScheme: ColorScheme.fromSeed(
+          seedColor: Colors.blue,
+          brightness: Brightness.dark,
+        ),
+        useMaterial3: true,
+      ),
+      themeMode: _themeMode,
       initialRoute: '/login',
       routes: {
         '/login': (_) => const LoginScreen(),
@@ -43,7 +80,13 @@ class MainApp extends StatelessWidget {
           final args =
               ModalRoute.of(context)?.settings.arguments
                   as Map<String, dynamic>?;
-          return SessionGuard(child: HomePage(userData: args));
+          return SessionGuard(
+            child: HomePage(
+              userData: args,
+              currentThemeMode: _themeMode,
+              onThemeModeChanged: _setThemeMode,
+            ),
+          );
         },
         '/anamnese': (_) => const SessionGuard(child: FichaPacientePage()),
         '/history': (_) => const SessionGuard(child: HistoryPage()),
