@@ -5,6 +5,11 @@ service cloud.firestore {
       return request.auth != null;
     }
 
+    function isActiveUser() {
+      return signedIn() &&
+          get(/databases/$(database)/documents/users/$(request.auth.uid)).data.isActive == true;
+    }
+
     function isAdmin() {
       return signedIn() &&
           get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'admin';
@@ -43,6 +48,24 @@ service cloud.firestore {
         );
 
       allow delete: if isAdmin();
+    }
+
+    // Fichas de anamnese: usuários ativos autenticados podem operar.
+    match /pacientes/{docId} {
+      allow read, create, update, delete: if isActiveUser();
+    }
+
+    // Protocolos ADL: usuários ativos autenticados podem operar.
+    match /adl_protocols/{docId} {
+      allow read, create, update, delete: if isActiveUser();
+    }
+
+    // Logs de acesso: escrita no login para o próprio usuário, leitura apenas admin.
+    match /access_logs/{docId} {
+      allow create: if isActiveUser() &&
+          request.resource.data.uid == request.auth.uid;
+      allow get, list: if isAdmin();
+      allow update, delete: if false;
     }
   }
 }
