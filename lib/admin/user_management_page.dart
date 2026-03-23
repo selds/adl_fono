@@ -340,13 +340,13 @@ class _UserManagementPageState extends State<UserManagementPage> {
                 final user = users[index];
                 final trimmedName = (user.displayName ?? '').trim();
                 final fallbackFromEmail = user.email.contains('@')
-                  ? user.email.split('@').first
-                  : user.email;
+                    ? user.email.split('@').first
+                    : user.email;
                 final displayName = trimmedName.isNotEmpty
-                  ? trimmedName
-                  : (fallbackFromEmail.isNotEmpty
-                      ? fallbackFromEmail
-                      : 'Sem nome');
+                    ? trimmedName
+                    : (fallbackFromEmail.isNotEmpty
+                          ? fallbackFromEmail
+                          : 'Sem nome');
                 final roleLabel = user.role == UserRole.admin
                     ? 'Administrador'
                     : 'Fonoaudiólogo';
