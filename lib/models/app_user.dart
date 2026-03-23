@@ -1,3 +1,5 @@
+import 'package:cloud_firestore/cloud_firestore.dart';
+
 /// Define os papéis/roles disponíveis na aplicação.
 enum UserRole {
   admin('admin'),
@@ -50,14 +52,26 @@ class AppUser {
 
   /// Cria AppUser a partir de JSON.
   factory AppUser.fromJson(Map<String, dynamic> json) => AppUser(
-    uid: json['uid'] as String,
-    email: json['email'] as String,
+    uid: (json['uid'] as String?) ?? '',
+    email: (json['email'] as String?) ?? '',
     displayName: json['displayName'] as String?,
     photoUrl: json['photoUrl'] as String?,
     role: UserRole.fromString(json['role'] as String?),
-    createdAt: DateTime.parse(json['createdAt'] as String),
+    createdAt: _parseCreatedAt(json['createdAt']),
     isActive: (json['isActive'] ?? true) as bool,
   );
+
+  static DateTime _parseCreatedAt(dynamic value) {
+    if (value is Timestamp) return value.toDate();
+    if (value is DateTime) return value;
+    if (value is int) {
+      return DateTime.fromMillisecondsSinceEpoch(value);
+    }
+    if (value is String && value.isNotEmpty) {
+      return DateTime.tryParse(value) ?? DateTime.now();
+    }
+    return DateTime.now();
+  }
 
   /// Retorna cópia com mudanças aplicadas.
   AppUser copyWith({
