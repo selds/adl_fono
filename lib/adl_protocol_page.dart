@@ -261,7 +261,10 @@ class _AdlProtocolPageState extends State<AdlProtocolPage> {
           filled: true,
           fillColor: colorScheme.surfaceContainerHighest,
           border: const OutlineInputBorder(),
-          contentPadding: const EdgeInsets.symmetric(horizontal: 6, vertical: 6),
+          contentPadding: const EdgeInsets.symmetric(
+            horizontal: 6,
+            vertical: 6,
+          ),
         ),
       ),
     );
