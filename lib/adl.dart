@@ -5,7 +5,6 @@ import 'package:mask_text_input_formatter/mask_text_input_formatter.dart';
 import 'package:uuid/uuid.dart';
 
 import 'models/paciente_ficha.dart';
-import 'profile_page.dart';
 
 class FichaPacientePage extends StatefulWidget {
   final PacienteFicha? initialFicha;
@@ -365,18 +364,6 @@ class _FichaPacientePageState extends State<FichaPacientePage> {
             const Text('Menu', style: TextStyle(fontWeight: FontWeight.w600)),
           ],
         ),
-        actions: [
-          IconButton(
-            icon: const Icon(Icons.person),
-            tooltip: 'Perfil',
-            onPressed: () {
-              showDialog<void>(
-                context: context,
-                builder: (context) => const ProfilePage(),
-              );
-            },
-          ),
-        ],
         flexibleSpace: Container(
           decoration: BoxDecoration(gradient: primaryGradient),
         ),
