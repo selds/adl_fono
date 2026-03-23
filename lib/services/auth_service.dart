@@ -1,6 +1,8 @@
 import 'package:adl_fono/models/app_user.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
+import 'package:firebase_core/firebase_core.dart';
+import 'package:adl_fono/firebase_options.dart';
 
 /// Serviço centralizado para gerenciar autenticação e usuários.
 class AuthService {
@@ -113,8 +115,17 @@ class AuthService {
     required String displayName,
     UserRole role = UserRole.fonoaudiologo,
   }) async {
+    FirebaseApp? secondaryApp;
     try {
-      final credential = await _auth.createUserWithEmailAndPassword(
+      // Cria usuário em uma instância secundária para não trocar a sessão do admin.
+      final appName = 'user-mgmt-${DateTime.now().microsecondsSinceEpoch}';
+      secondaryApp = await Firebase.initializeApp(
+        name: appName,
+        options: DefaultFirebaseOptions.currentPlatform,
+      );
+      final secondaryAuth = FirebaseAuth.instanceFor(app: secondaryApp);
+
+      final credential = await secondaryAuth.createUserWithEmailAndPassword(
         email: email.trim(),
         password: password,
       );
@@ -138,6 +149,13 @@ class AuthService {
           .set(appUser.toJson());
     } on FirebaseAuthException {
       rethrow;
+    } finally {
+      if (secondaryApp != null) {
+        try {
+          await FirebaseAuth.instanceFor(app: secondaryApp).signOut();
+        } catch (_) {}
+        await secondaryApp.delete();
+      }
     }
   }
 
