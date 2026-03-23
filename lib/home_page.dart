@@ -237,17 +237,6 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
                             children: [
                               Row(
                                 children: [
-                                  CircleAvatar(
-                                    radius: 14,
-                                    backgroundImage:
-                                        _userData['photo']!.isNotEmpty
-                                        ? NetworkImage(_userData['photo']!)
-                                        : null,
-                                    child: _userData['photo']!.isEmpty
-                                        ? const Icon(Icons.person, size: 14)
-                                        : null,
-                                  ),
-                                  const SizedBox(width: 8),
                                   Expanded(
                                     child: Text(
                                       'Bem-vindo, ${_userData['name']}',
@@ -258,7 +247,7 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
                                     ),
                                   ),
                                   IconButton(
-                                    icon: const Icon(Icons.person),
+                                    icon: const Icon(Icons.edit),
                                     onPressed: _showProfile,
                                     tooltip: 'Ver perfil',
                                   ),
