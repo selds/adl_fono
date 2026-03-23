@@ -1,3 +1,4 @@
+import 'package:adl_fono/models/access_log_entry.dart';
 import 'package:adl_fono/models/app_user.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
@@ -11,6 +12,7 @@ class AuthService {
   static final _auth = FirebaseAuth.instance;
   static final _firestore = FirebaseFirestore.instance;
   static const _usersCollection = 'users';
+  static const _accessLogsCollection = 'access_logs';
 
   /// Faz login com e-mail e senha, retorna AppUser com role.
   static Future<AppUser?> signIn({
@@ -34,9 +36,39 @@ class AuthService {
           message: 'Conta desativada. Entre em contato com o suporte.',
         );
       }
+
+      // Melhor esforço: falha ao salvar log não deve bloquear o login.
+      try {
+        await _saveAccessLog(appUser);
+      } catch (_) {}
+
       return appUser;
     } on FirebaseAuthException {
       rethrow;
+    }
+  }
+
+  static Future<void> _saveAccessLog(AppUser user) async {
+    await _firestore.collection(_accessLogsCollection).add({
+      'uid': user.uid,
+      'email': user.email,
+      'displayName': user.displayName ?? '',
+      'role': user.role.value,
+      'loginAt': Timestamp.now(),
+    });
+  }
+
+  static Future<List<AccessLogEntry>> getAccessLogs() async {
+    try {
+      final snapshot = await _firestore
+          .collection(_accessLogsCollection)
+          .orderBy('loginAt', descending: true)
+          .get();
+      return snapshot.docs
+          .map((doc) => AccessLogEntry.fromJson(doc.data()))
+          .toList();
+    } catch (e) {
+      throw Exception('Erro ao buscar logs de acesso: $e');
     }
   }
 
