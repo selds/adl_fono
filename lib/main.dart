@@ -9,6 +9,7 @@ import 'package:adl_fono/models/adl_protocol.dart';
 import 'package:adl_fono/models/app_user.dart';
 import 'package:adl_fono/models/paciente_ficha.dart';
 import 'package:adl_fono/services/auth_service.dart';
+import 'package:adl_fono/widgets/session_guard.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:flutter/material.dart';
 
@@ -42,10 +43,10 @@ class MainApp extends StatelessWidget {
           final args =
               ModalRoute.of(context)?.settings.arguments
                   as Map<String, dynamic>?;
-          return HomePage(userData: args);
+          return SessionGuard(child: HomePage(userData: args));
         },
-        '/anamnese': (_) => const FichaPacientePage(),
-        '/history': (_) => const HistoryPage(),
+        '/anamnese': (_) => const SessionGuard(child: FichaPacientePage()),
+        '/history': (_) => const SessionGuard(child: HistoryPage()),
         '/adl': (context) {
           final args =
               ModalRoute.of(context)!.settings.arguments
@@ -55,34 +56,40 @@ class MainApp extends StatelessWidget {
           final protocol = protocolId == null
               ? null
               : AdlProtocolRepository.byId(protocolId);
-          return AdlProtocolPage(pacienteId: pacienteId, protocol: protocol);
+          return SessionGuard(
+            child: AdlProtocolPage(pacienteId: pacienteId, protocol: protocol),
+          );
         },
         '/edit': (context) {
           final ficha =
               ModalRoute.of(context)!.settings.arguments as PacienteFicha;
-          return FichaPacientePage(
-            initialFicha: ficha,
-            onSave: (updated) async {
-              await FichaRepository.update(ficha, updated);
-            },
+          return SessionGuard(
+            child: FichaPacientePage(
+              initialFicha: ficha,
+              onSave: (updated) async {
+                await FichaRepository.update(ficha, updated);
+              },
+            ),
           );
         },
         '/admin': (context) {
-          return FutureBuilder<AppUser?>(
-            future: AuthService.getCurrentUserProfile(),
-            builder: (context, snapshot) {
-              if (snapshot.connectionState == ConnectionState.waiting) {
-                return const Scaffold(
-                  body: Center(child: CircularProgressIndicator()),
-                );
-              }
+          return SessionGuard(
+            child: FutureBuilder<AppUser?>(
+              future: AuthService.getCurrentUserProfile(),
+              builder: (context, snapshot) {
+                if (snapshot.connectionState == ConnectionState.waiting) {
+                  return const Scaffold(
+                    body: Center(child: CircularProgressIndicator()),
+                  );
+                }
 
-              final appUser = snapshot.data;
-              if (appUser == null || !appUser.isAdmin) {
-                return _buildAccessDeniedPage(context);
-              }
-              return const UserManagementPage();
-            },
+                final appUser = snapshot.data;
+                if (appUser == null || !appUser.isAdmin) {
+                  return _buildAccessDeniedPage(context);
+                }
+                return const UserManagementPage();
+              },
+            ),
           );
         },
       },
