@@ -1,6 +1,7 @@
 import 'dart:async';
 
 import 'package:adl_fono/services/auth_service.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 
 class SessionGuard extends StatefulWidget {
@@ -27,10 +28,19 @@ class _SessionGuardState extends State<SessionGuard> {
     if (!mounted || _handlingLogout) return;
 
     try {
+      final currentUser = FirebaseAuth.instance.currentUser;
+      if (currentUser == null) {
+        return;
+      }
+
       final profile = await AuthService.getCurrentUserProfile();
       if (!mounted || _handlingLogout) return;
 
-      if (profile == null || !profile.isActive) {
+      if (profile == null) {
+        return;
+      }
+
+      if (!profile.isActive) {
         _handlingLogout = true;
         _timer?.cancel();
         await AuthService.signOut();
