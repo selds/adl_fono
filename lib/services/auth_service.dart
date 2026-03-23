@@ -50,7 +50,37 @@ class AuthService {
       return createdUser;
     }
 
-    return AppUser.fromJson(doc.data()!);
+    final data = Map<String, dynamic>.from(doc.data()!);
+    final patched = <String, dynamic>{
+      ...data,
+      'uid': (data['uid'] as String?) ?? user.uid,
+      'email': (data['email'] as String?) ?? email,
+      'displayName': data.containsKey('displayName')
+          ? data['displayName']
+          : user.displayName,
+      'photoUrl': data.containsKey('photoUrl')
+          ? data['photoUrl']
+          : user.photoURL,
+      'role': (data['role'] as String?) ?? UserRole.fonoaudiologo.value,
+      'createdAt':
+          data['createdAt'] ??
+          (user.metadata.creationTime ?? DateTime.now()).toIso8601String(),
+      'isActive': (data['isActive'] as bool?) ?? true,
+    };
+
+    final needsPatch =
+        data['uid'] is! String ||
+        data['email'] is! String ||
+        data['role'] is! String ||
+        data['createdAt'] == null ||
+        data['isActive'] is! bool;
+
+    // Se o documento foi criado manualmente sem campos obrigatórios, completa aqui.
+    if (needsPatch) {
+      await userRef.set(patched, SetOptions(merge: true));
+    }
+
+    return AppUser.fromJson(patched);
   }
 
   /// Retorna o usuário atualmente logado.
