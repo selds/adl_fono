@@ -27,6 +27,13 @@ class AuthService {
 
       // Garante perfil no Firestore e lê role persistida.
       final appUser = await _ensureUserProfile(user);
+      if (!appUser.isActive) {
+        await _auth.signOut();
+        throw FirebaseAuthException(
+          code: 'user-disabled',
+          message: 'Conta desativada. Entre em contato com o suporte.',
+        );
+      }
       return appUser;
     } on FirebaseAuthException {
       rethrow;
@@ -53,21 +60,29 @@ class AuthService {
     }
 
     final data = Map<String, dynamic>.from(doc.data()!);
+    final uidValue = data['uid'];
+    final emailValue = data['email'];
+    final roleValue = data['role'];
+    final isActiveValue = data['isActive'];
     final patched = <String, dynamic>{
       ...data,
-      'uid': (data['uid'] as String?) ?? user.uid,
-      'email': (data['email'] as String?) ?? email,
+      'uid': uidValue is String && uidValue.isNotEmpty ? uidValue : user.uid,
+      'email': emailValue is String && emailValue.isNotEmpty
+          ? emailValue
+          : email,
       'displayName': data.containsKey('displayName')
           ? data['displayName']
           : user.displayName,
       'photoUrl': data.containsKey('photoUrl')
           ? data['photoUrl']
           : user.photoURL,
-      'role': (data['role'] as String?) ?? UserRole.fonoaudiologo.value,
+      'role': roleValue is String && roleValue.isNotEmpty
+          ? roleValue
+          : UserRole.fonoaudiologo.value,
       'createdAt':
           data['createdAt'] ??
           (user.metadata.creationTime ?? DateTime.now()).toIso8601String(),
-      'isActive': (data['isActive'] as bool?) ?? true,
+      'isActive': isActiveValue is bool ? isActiveValue : true,
     };
 
     final needsPatch =
