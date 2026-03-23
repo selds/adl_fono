@@ -1,4 +1,4 @@
-﻿import 'package:flutter/material.dart';
+import 'package:flutter/material.dart';
 
 import 'models/adl_protocol.dart';
 
@@ -13,26 +13,24 @@ class AdlProtocolPage extends StatefulWidget {
 }
 
 class _AdlProtocolPageState extends State<AdlProtocolPage> {
-  // RECEPTIVA – pontuações por questão
+  static const _ageBandLabel = '1 ano a 1 ano e 5 meses';
+
   late final TextEditingController _q5Score;
   late final TextEditingController _q6Score;
   late final TextEditingController _q7Score;
   late final TextEditingController _q8Score;
 
-  // Q5 sub-respostas
   bool? _q5a, _q5b, _q5c;
   late final TextEditingController _q5aText;
   late final TextEditingController _q5bText;
-  // Q6 sub-respostas
+
   bool? _q6a, _q6b, _q6c, _q6d, _q6e, _q6f;
   late final TextEditingController _q6aText;
   late final TextEditingController _q6bText;
-  // Q7 sub-respostas
+
   bool? _q7a, _q7b, _q7c, _q7d, _q7e, _q7f, _q7g;
-  // Q8 sub-respostas
   bool? _q8a, _q8b, _q8c;
 
-  // EXPRESSIVA - campos de digitacao por questao
   late final TextEditingController _q1ExpScore;
   late final TextEditingController _q1ExpText;
   bool? _q1ExpMet;
@@ -46,6 +44,38 @@ class _AdlProtocolPageState extends State<AdlProtocolPage> {
   late final TextEditingController _q4ExpText;
 
   final _formKey = GlobalKey<FormState>();
+  int _selectedStepIndex = 0;
+
+  List<_AdlStepMeta> get _steps => const [
+    _AdlStepMeta(
+      title: 'Visão geral',
+      subtitle: 'Introdução da faixa etária e orientação do protocolo.',
+      icon: Icons.fact_check_outlined,
+    ),
+    _AdlStepMeta(
+      title: 'Compreensiva',
+      subtitle: 'Perguntas 1 e 2 com pontuação automática.',
+      icon: Icons.hearing_outlined,
+    ),
+    _AdlStepMeta(
+      title: 'Expressiva 1',
+      subtitle: 'Participação em brincadeiras.',
+      icon: Icons.groups_2_outlined,
+    ),
+    _AdlStepMeta(
+      title: 'Expressiva 2',
+      subtitle: 'Gestos e vocalizações.',
+      icon: Icons.record_voice_over_outlined,
+    ),
+    _AdlStepMeta(
+      title: 'Resumo',
+      subtitle: 'Conferência final e salvamento do protocolo.',
+      icon: Icons.summarize_outlined,
+    ),
+  ];
+
+  bool get _isFirstStep => _selectedStepIndex == 0;
+  bool get _isLastStep => _selectedStepIndex == _steps.length - 1;
 
   @override
   void initState() {
@@ -189,8 +219,6 @@ class _AdlProtocolPageState extends State<AdlProtocolPage> {
     Navigator.of(context).pop();
   }
 
-  // ── helpers de UI ──────────────────────────────────────────────────────────
-
   int _scoreToInt(String value) {
     final normalized = value.trim().replaceAll(',', '.');
     final parsed = double.tryParse(normalized);
@@ -198,7 +226,7 @@ class _AdlProtocolPageState extends State<AdlProtocolPage> {
   }
 
   int _countSim(Iterable<bool?> values) {
-    return values.where((v) => v == true).length;
+    return values.where((value) => value == true).length;
   }
 
   int _scoreByThreshold({required int acertos, required int minAcertos}) {
@@ -240,12 +268,29 @@ class _AdlProtocolPageState extends State<AdlProtocolPage> {
         _scoreToInt(_q8Score.text);
   }
 
+  void _goToStep(int index) {
+    if (index < 0 || index >= _steps.length || index == _selectedStepIndex) {
+      return;
+    }
+
+    setState(() => _selectedStepIndex = index);
+  }
+
+  void _goToPreviousStep() {
+    if (_isFirstStep) return;
+    setState(() => _selectedStepIndex -= 1);
+  }
+
+  void _goToNextStep() {
+    if (_isLastStep) return;
+    setState(() => _selectedStepIndex += 1);
+  }
+
   Widget _buildScoreField(
     TextEditingController controller, {
     bool readOnly = false,
   }) {
-    final theme = Theme.of(context);
-    final colorScheme = theme.colorScheme;
+    final colorScheme = Theme.of(context).colorScheme;
     return SizedBox(
       width: 56,
       child: TextFormField(
@@ -425,9 +470,15 @@ class _AdlProtocolPageState extends State<AdlProtocolPage> {
           const SizedBox(height: 6),
           Row(
             children: [
-              const Text(
-                'Atende ao critério?',
-                style: TextStyle(fontSize: 13, fontWeight: FontWeight.w600),
+              Expanded(
+                child: Text(
+                  'Atende ao critério?',
+                  style: TextStyle(
+                    fontSize: 13,
+                    fontWeight: FontWeight.w600,
+                    color: colorScheme.onSurface,
+                  ),
+                ),
               ),
               const SizedBox(width: 12),
               _buildYesNoToggle(
@@ -524,14 +575,14 @@ class _AdlProtocolPageState extends State<AdlProtocolPage> {
       elevation: 3,
       color: colorScheme.surfaceContainerLow,
       surfaceTintColor: Colors.transparent,
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
       clipBehavior: Clip.antiAlias,
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
           Container(
             color: headerColor,
-            padding: const EdgeInsets.symmetric(vertical: 10, horizontal: 12),
+            padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 14),
             child: Text(
               title,
               textAlign: TextAlign.center,
@@ -539,12 +590,12 @@ class _AdlProtocolPageState extends State<AdlProtocolPage> {
                 color: onHeaderColor,
                 fontWeight: FontWeight.bold,
                 fontSize: 14,
-                letterSpacing: 0.5,
+                letterSpacing: 0.4,
               ),
             ),
           ),
           Padding(
-            padding: const EdgeInsets.all(12),
+            padding: const EdgeInsets.all(14),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.stretch,
               children: children,
@@ -555,173 +606,643 @@ class _AdlProtocolPageState extends State<AdlProtocolPage> {
     );
   }
 
+  Widget _buildMetricTile({
+    required String label,
+    required String value,
+    required IconData icon,
+  }) {
+    final colorScheme = Theme.of(context).colorScheme;
+    return Container(
+      padding: const EdgeInsets.all(14),
+      decoration: BoxDecoration(
+        color: colorScheme.surfaceContainerHighest,
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: colorScheme.outlineVariant),
+      ),
+      child: Row(
+        children: [
+          Icon(icon, color: colorScheme.primary),
+          const SizedBox(width: 12),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  label,
+                  style: TextStyle(
+                    fontSize: 12,
+                    color: colorScheme.onSurfaceVariant,
+                  ),
+                ),
+                const SizedBox(height: 2),
+                Text(
+                  value,
+                  style: TextStyle(
+                    fontSize: 20,
+                    fontWeight: FontWeight.bold,
+                    color: colorScheme.onSurface,
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildPageHeader() {
+    final colorScheme = Theme.of(context).colorScheme;
+    return Container(
+      decoration: BoxDecoration(
+        color: colorScheme.surfaceContainerLow,
+        border: Border.all(color: colorScheme.outlineVariant),
+        borderRadius: BorderRadius.circular(12),
+      ),
+      padding: const EdgeInsets.all(16),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            widget.protocol == null
+                ? 'Novo Protocolo ADL'
+                : 'Editar Protocolo ADL',
+            style: TextStyle(
+              fontSize: 20,
+              fontWeight: FontWeight.bold,
+              color: colorScheme.onSurface,
+            ),
+          ),
+          const SizedBox(height: 8),
+          Wrap(
+            spacing: 10,
+            runSpacing: 10,
+            children: [
+              Chip(
+                avatar: const Icon(Icons.schedule, size: 18),
+                label: const Text(_ageBandLabel),
+                backgroundColor: colorScheme.secondaryContainer,
+                side: BorderSide.none,
+              ),
+              Chip(
+                avatar: const Icon(Icons.folder_shared_outlined, size: 18),
+                label: Text('Paciente ${widget.pacienteId.substring(0, 8)}'),
+                backgroundColor: colorScheme.surfaceContainerHighest,
+                side: BorderSide.none,
+              ),
+            ],
+          ),
+          const SizedBox(height: 10),
+          Text(
+            'A tela foi dividida em etapas curtas para evitar formulários extensos. Use o sumário para navegar entre as seções e acompanhar a faixa etária atual.',
+            style: TextStyle(color: colorScheme.onSurfaceVariant),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildProgressCard() {
+    final colorScheme = Theme.of(context).colorScheme;
+    final currentStep = _selectedStepIndex + 1;
+    final progress = currentStep / _steps.length;
+    return Container(
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: colorScheme.surfaceContainerLow,
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: colorScheme.outlineVariant),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Expanded(
+                child: Text(
+                  'Etapa $currentStep de ${_steps.length}',
+                  style: TextStyle(
+                    fontWeight: FontWeight.w600,
+                    color: colorScheme.onSurface,
+                  ),
+                ),
+              ),
+              Text(
+                _steps[_selectedStepIndex].title,
+                style: TextStyle(color: colorScheme.onSurfaceVariant),
+              ),
+            ],
+          ),
+          const SizedBox(height: 10),
+          LinearProgressIndicator(
+            value: progress,
+            borderRadius: BorderRadius.circular(999),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildSidebar() {
+    final colorScheme = Theme.of(context).colorScheme;
+    return Container(
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: colorScheme.surfaceContainerLow,
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: colorScheme.outlineVariant),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            'Sumário do protocolo',
+            style: TextStyle(
+              fontSize: 18,
+              fontWeight: FontWeight.bold,
+              color: colorScheme.onSurface,
+            ),
+          ),
+          const SizedBox(height: 6),
+          Text(
+            _ageBandLabel,
+            style: TextStyle(
+              color: colorScheme.primary,
+              fontWeight: FontWeight.w600,
+            ),
+          ),
+          const SizedBox(height: 16),
+          ...List.generate(_steps.length, (index) {
+            final step = _steps[index];
+            final selected = index == _selectedStepIndex;
+            return Padding(
+              padding: const EdgeInsets.only(bottom: 10),
+              child: InkWell(
+                borderRadius: BorderRadius.circular(12),
+                onTap: () => _goToStep(index),
+                child: AnimatedContainer(
+                  duration: const Duration(milliseconds: 180),
+                  padding: const EdgeInsets.all(12),
+                  decoration: BoxDecoration(
+                    color: selected
+                        ? colorScheme.primaryContainer
+                        : colorScheme.surfaceContainerHighest,
+                    borderRadius: BorderRadius.circular(12),
+                    border: Border.all(
+                      color: selected
+                          ? colorScheme.primary
+                          : colorScheme.outlineVariant,
+                    ),
+                  ),
+                  child: Row(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      CircleAvatar(
+                        radius: 18,
+                        backgroundColor: selected
+                            ? colorScheme.primary
+                            : colorScheme.surface,
+                        foregroundColor: selected
+                            ? colorScheme.onPrimary
+                            : colorScheme.primary,
+                        child: Icon(step.icon, size: 18),
+                      ),
+                      const SizedBox(width: 10),
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              '${index + 1}. ${step.title}',
+                              style: TextStyle(
+                                fontWeight: FontWeight.w600,
+                                color: selected
+                                    ? colorScheme.onPrimaryContainer
+                                    : colorScheme.onSurface,
+                              ),
+                            ),
+                            const SizedBox(height: 4),
+                            Text(
+                              step.subtitle,
+                              style: TextStyle(
+                                fontSize: 12,
+                                color: selected
+                                    ? colorScheme.onPrimaryContainer
+                                    : colorScheme.onSurfaceVariant,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+            );
+          }),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildCompactSummary() {
+    final colorScheme = Theme.of(context).colorScheme;
+    return Container(
+      padding: const EdgeInsets.all(14),
+      decoration: BoxDecoration(
+        color: colorScheme.surfaceContainerLow,
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: colorScheme.outlineVariant),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            'Sumário',
+            style: TextStyle(
+              fontWeight: FontWeight.bold,
+              color: colorScheme.onSurface,
+            ),
+          ),
+          const SizedBox(height: 10),
+          Wrap(
+            spacing: 8,
+            runSpacing: 8,
+            children: List.generate(_steps.length, (index) {
+              return ChoiceChip(
+                selected: index == _selectedStepIndex,
+                label: Text('${index + 1}. ${_steps[index].title}'),
+                onSelected: (_) => _goToStep(index),
+              );
+            }),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildStepScaffold({
+    required String title,
+    required String subtitle,
+    required List<Widget> children,
+  }) {
+    final colorScheme = Theme.of(context).colorScheme;
+    return Container(
+      key: ValueKey(_selectedStepIndex),
+      padding: const EdgeInsets.all(18),
+      decoration: BoxDecoration(
+        color: colorScheme.surfaceContainerLow,
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: colorScheme.outlineVariant),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            title,
+            style: TextStyle(
+              fontSize: 22,
+              fontWeight: FontWeight.bold,
+              color: colorScheme.onSurface,
+            ),
+          ),
+          const SizedBox(height: 6),
+          Text(subtitle, style: TextStyle(color: colorScheme.onSurfaceVariant)),
+          const SizedBox(height: 18),
+          ...children,
+        ],
+      ),
+    );
+  }
+
+  Widget _buildOverviewStep() {
+    return _buildStepScaffold(
+      title: 'Faixa etária $_ageBandLabel',
+      subtitle:
+          'Esta organização segue o protocolo em etapas menores. As perguntas foram agrupadas para reduzir rolagem excessiva e facilitar a navegação.',
+      children: [
+        LayoutBuilder(
+          builder: (context, constraints) {
+            final isNarrow = constraints.maxWidth < 760;
+            final metrics = [
+              _buildMetricTile(
+                label: 'Pontuação receptiva atual',
+                value: '$_receptivaTotal',
+                icon: Icons.hearing_outlined,
+              ),
+              _buildMetricTile(
+                label: 'Pontuação expressiva atual',
+                value: '$_expressivaTotal',
+                icon: Icons.record_voice_over_outlined,
+              ),
+            ];
+
+            if (isNarrow) {
+              return Column(
+                children: [metrics[0], const SizedBox(height: 12), metrics[1]],
+              );
+            }
+
+            return Row(
+              children: [
+                Expanded(child: metrics[0]),
+                const SizedBox(width: 12),
+                Expanded(child: metrics[1]),
+              ],
+            );
+          },
+        ),
+        const SizedBox(height: 16),
+        _buildColumnCard(
+          title: 'Como usar esta tela',
+          children: const [
+            Text(
+              '1. Use o sumário lateral para pular entre as etapas da faixa etária atual.',
+            ),
+            SizedBox(height: 8),
+            Text(
+              '2. Cada etapa agrupa poucas perguntas, como no protocolo impresso, para reduzir o tamanho da página.',
+            ),
+            SizedBox(height: 8),
+            Text(
+              '3. O resumo final consolida os totais antes do salvamento do protocolo.',
+            ),
+          ],
+        ),
+      ],
+    );
+  }
+
+  Widget _buildCompreensivaStep() {
+    return _buildStepScaffold(
+      title: 'Linguagem compreensiva',
+      subtitle: 'Perguntas 1 e 2 desta faixa etária com pontuação automática.',
+      children: [
+        _buildColumnCard(
+          title: 'LINGUAGEM COMPREENSIVA',
+          children: [
+            _buildQuestion(
+              title: '1. Atenção visual.',
+              score: _q5Score,
+              readOnlyScore: true,
+              description:
+                  'Material: um brinquedo que a criança tenha demonstrado interesse ou bolhinhas de sabão.\n'
+                  'Procedimento: inicialmente, o examinador ou cuidador brinca com a criança e, em seguida:',
+              items: [
+                _buildSubItem(
+                  'a. movimenta o brinquedo que a criança demonstrou interesse da esquerda para a direita, observando se ela acompanha com o olhar o brinquedo em movimento.',
+                  _q5a,
+                  (value) => setState(() => _q5a = value),
+                  _q5aText,
+                ),
+                _buildSubItem(
+                  'b. aguarda um minuto, fala o nome da criança, mostra o recipiente com o sabão e assopra as bolinhas de sabão, observando se ela acompanha com o olhar as bolinhas.',
+                  _q5b,
+                  (value) => setState(() => _q5b = value),
+                  _q5bText,
+                ),
+              ],
+              scoreInfo:
+                  '1 ponto: quando a criança acompanha com o olhar o brinquedo ou as bolinhas de sabão (cada procedimento poderá ser repetido duas vezes).',
+            ),
+            _buildQuestion(
+              title: '2. Atenção auditiva.',
+              score: _q6Score,
+              readOnlyScore: true,
+              description:
+                  'Material: brinquedos.\n'
+                  'Procedimento: inicialmente o examinador ou o cuidador brinca com a criança e, em seguida:',
+              items: [
+                _buildSubItem(
+                  'a. chama a criança pelo nome e observa se ela olha na direção de quem a chamou.',
+                  _q6a,
+                  (value) => setState(() => _q6a = value),
+                  _q6aText,
+                ),
+                _buildSubItem(
+                  'b. aguarda um minuto, depois bate palma atrás da criança, do lado direito, e, por último, do lado esquerdo, observando se ela procura a fonte sonora.',
+                  _q6b,
+                  (value) => setState(() => _q6b = value),
+                  _q6bText,
+                ),
+              ],
+              scoreInfo:
+                  '1 ponto: quando a criança responde ao item a ou b (cada procedimento poderá ser repetido duas vezes).',
+            ),
+            _buildMetricTile(
+              label: 'Total da linguagem receptiva',
+              value: '$_receptivaTotal',
+              icon: Icons.calculate_outlined,
+            ),
+          ],
+        ),
+      ],
+    );
+  }
+
+  Widget _buildExpressivaStepOne() {
+    return _buildStepScaffold(
+      title: 'Linguagem expressiva: interação',
+      subtitle: 'Primeira etapa expressiva com foco em participação social.',
+      children: [
+        _buildColumnCard(
+          title: 'LINGUAGEM EXPRESSIVA',
+          children: [
+            _buildExpressivaQuestion(
+              title:
+                  '1. Participa de brincadeiras com outra pessoa pelo período de 1 a 2 minutos.',
+              score: _q1ExpScore,
+              meetsCriteria: _q1ExpMet,
+              onMeetsCriteriaChanged: (value) => _q1ExpMet = value,
+              description:
+                  'Material: um marcador de tempo (ex.: celular), paninho e brinquedos.\n'
+                  'Procedimento: solicitar ao acompanhante que brinque com a criança como faria em casa. O examinador poderá observar e anotar o interesse da criança pelos brinquedos.',
+              inputLabel: 'Anotações da observação',
+              inputController: _q1ExpText,
+              scoreInfo:
+                  '1 ponto: quando a criança mantém o contato do olhar e demonstra prazer com a brincadeira. Quando este comportamento é observado em outro momento na sessão de avaliação ou o cuidador relata este comportamento no contexto.',
+            ),
+          ],
+        ),
+      ],
+    );
+  }
+
+  Widget _buildExpressivaStepTwo() {
+    return _buildStepScaffold(
+      title: 'Linguagem expressiva: gestos e vocalizações',
+      subtitle: 'Segunda etapa expressiva com observações comportamentais.',
+      children: [
+        _buildColumnCard(
+          title: 'LINGUAGEM EXPRESSIVA',
+          children: [
+            _buildExpressivaQuestion(
+              title: '2. Comunica-se de forma gestual.',
+              score: _q2ExpScore,
+              meetsCriteria: _q2ExpMet,
+              onMeetsCriteriaChanged: (value) => _q2ExpMet = value,
+              description:
+                  'Material: brinquedos.\n'
+                  'Procedimento: o examinador ou o cuidador brinca com a criança. O examinador observa e anota a comunicação gestual da criança.',
+              inputLabel: 'Gestos observados',
+              inputController: _q2ExpText,
+              scoreInfo:
+                  '1 ponto: quando observado, no período de avaliação, um ou mais comportamentos da criança usando gestos com intenção de se comunicar (exemplos: estender um objeto para o examinador ou para o cuidador, apontar para um objeto ou para uma pessoa, balançar a mão dando adeus).',
+            ),
+            _buildExpressivaQuestion(
+              title:
+                  '3. A criança vocaliza sem que movimentos de pernas e de braços acompanhem a emissão dos sons.',
+              score: _q3ExpScore,
+              meetsCriteria: _q3ExpMet,
+              onMeetsCriteriaChanged: (value) => _q3ExpMet = value,
+              description:
+                  'Material: brinquedos.\n'
+                  'Procedimento: o cuidador ou o examinador se posiciona frente à criança, de forma que esta possa ver o seu rosto, sorri e verbaliza, imitando os sons que fez durante a sessão de avaliação ou que têm sido observados em casa.',
+              inputLabel: 'Vocalizações observadas',
+              inputController: _q3ExpText,
+              scoreInfo:
+                  '1 ponto: quando o examinador ou o cuidador fala com a criança e esta responde vocalizando sem movimentos do corpo.',
+            ),
+            _buildMetricTile(
+              label: 'Total da linguagem expressiva',
+              value: '$_expressivaTotal',
+              icon: Icons.calculate_outlined,
+            ),
+          ],
+        ),
+      ],
+    );
+  }
+
+  Widget _buildResumoStep() {
+    final colorScheme = Theme.of(context).colorScheme;
+    return _buildStepScaffold(
+      title: 'Resumo do protocolo',
+      subtitle:
+          'Conferência final das pontuações antes do salvamento. O formato está pronto para receber novas etapas e futuras faixas etárias.',
+      children: [
+        LayoutBuilder(
+          builder: (context, constraints) {
+            final isNarrow = constraints.maxWidth < 760;
+            final left = _buildMetricTile(
+              label: 'Pontuação total receptiva',
+              value: '$_receptivaTotal',
+              icon: Icons.hearing_outlined,
+            );
+            final right = _buildMetricTile(
+              label: 'Pontuação total expressiva',
+              value: '$_expressivaTotal',
+              icon: Icons.record_voice_over_outlined,
+            );
+
+            if (isNarrow) {
+              return Column(
+                children: [left, const SizedBox(height: 12), right],
+              );
+            }
+
+            return Row(
+              children: [
+                Expanded(child: left),
+                const SizedBox(width: 12),
+                Expanded(child: right),
+              ],
+            );
+          },
+        ),
+        const SizedBox(height: 16),
+        Container(
+          padding: const EdgeInsets.all(16),
+          decoration: BoxDecoration(
+            color: colorScheme.surfaceContainerHighest,
+            borderRadius: BorderRadius.circular(12),
+            border: Border.all(color: colorScheme.outlineVariant),
+          ),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                'Itens preenchidos nesta faixa etária',
+                style: TextStyle(
+                  fontWeight: FontWeight.bold,
+                  color: colorScheme.onSurface,
+                ),
+              ),
+              const SizedBox(height: 12),
+              Text(
+                'Compreensiva 1: ${_q5Score.text.isEmpty ? '0' : _q5Score.text} ponto(s)',
+              ),
+              Text(
+                'Compreensiva 2: ${_q6Score.text.isEmpty ? '0' : _q6Score.text} ponto(s)',
+              ),
+              Text(
+                'Expressiva 1: ${_q1ExpScore.text.isEmpty ? '0' : _q1ExpScore.text} ponto(s)',
+              ),
+              Text(
+                'Expressiva 2: ${_q2ExpScore.text.isEmpty ? '0' : _q2ExpScore.text} ponto(s)',
+              ),
+              Text(
+                'Expressiva 3: ${_q3ExpScore.text.isEmpty ? '0' : _q3ExpScore.text} ponto(s)',
+              ),
+              const SizedBox(height: 14),
+              Text(
+                'Use o botão Salvar protocolo para persistir as respostas no histórico do paciente.',
+                style: TextStyle(color: colorScheme.onSurfaceVariant),
+              ),
+            ],
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildCurrentStep() {
+    switch (_selectedStepIndex) {
+      case 0:
+        return _buildOverviewStep();
+      case 1:
+        return _buildCompreensivaStep();
+      case 2:
+        return _buildExpressivaStepOne();
+      case 3:
+        return _buildExpressivaStepTwo();
+      case 4:
+        return _buildResumoStep();
+      default:
+        return _buildOverviewStep();
+    }
+  }
+
+  Widget _buildBottomNavigation() {
+    return Wrap(
+      alignment: WrapAlignment.spaceBetween,
+      runSpacing: 10,
+      spacing: 10,
+      children: [
+        OutlinedButton.icon(
+          onPressed: _isFirstStep ? null : _goToPreviousStep,
+          icon: const Icon(Icons.arrow_back),
+          label: const Text('Anterior'),
+        ),
+        if (!_isLastStep)
+          ElevatedButton.icon(
+            onPressed: _goToNextStep,
+            icon: const Icon(Icons.arrow_forward),
+            label: const Text('Próxima etapa'),
+          )
+        else
+          ElevatedButton.icon(
+            onPressed: _save,
+            icon: const Icon(Icons.save_outlined),
+            label: const Text('Salvar protocolo'),
+          ),
+      ],
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-    final colorScheme = theme.colorScheme;
-    final isWide = MediaQuery.of(context).size.width > 700;
-
-    final receptivaContent = _buildColumnCard(
-      title: 'LINGUAGEM COMPREENSIVA',
-      children: [
-        _buildQuestion(
-          title: '1. Atenção visual.',
-          score: _q5Score,
-          readOnlyScore: true,
-          description:
-              'Material: um brinquedo que a criança tenha demonstrado interesse ou bolhinhas de sabão.\n'
-              'Procedimento: inicialmente, o examinador ou cuidador brinca com a criança e, em seguida:',
-          items: [
-            _buildSubItem(
-              'a. movimenta o brinquedo que a criança demonstrou interesse da esquerda para a direita, observando se ela acompanha com o olhar o brinquedo em movimento.',
-              _q5a,
-              (v) => setState(() => _q5a = v),
-              _q5aText,
-            ),
-            _buildSubItem(
-              'b. aguarda um minuto, fala o nome da criança, mostra o recipiente com o sabão e assopra as bolinhas de sabão, observando se ela acompanha com o olhar as bolinhas.',
-              _q5b,
-              (v) => setState(() => _q5b = v),
-              _q5bText,
-            ),
-          ],
-          scoreInfo:
-              '1 ponto: quando a criança acompanha com o olhar o brinquedo ou as bolinhas de sabão (cada procedimento poderá ser repetido duas vezes).',
-        ),
-        _buildQuestion(
-          title: '2. Atenção auditiva.',
-          score: _q6Score,
-          readOnlyScore: true,
-          description:
-              'Material: brinquedos.\n'
-              'Procedimento: inicialmente o examinador ou o cuidador brinca com a criança e, em seguida:',
-          items: [
-            _buildSubItem(
-              'a. chama a criança pelo nome e observa se ela olha na direção de quem a chamou.',
-              _q6a,
-              (v) => setState(() => _q6a = v),
-              _q6aText,
-            ),
-            _buildSubItem(
-              'b. aguarda um minuto, depois bate palma atrás da criança, do lado direito, e, por último, do lado esquerdo, observando se ela procura a fonte sonora.',
-              _q6b,
-              (v) => setState(() => _q6b = v),
-              _q6bText,
-            ),
-          ],
-          scoreInfo:
-              '1 ponto: quando a criança responde ao item a ou b (cada procedimento poderá ser repetido duas vezes).',
-        ),
-        Container(
-          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
-          decoration: BoxDecoration(
-            color: colorScheme.surfaceContainerHighest,
-            borderRadius: BorderRadius.circular(8),
-            border: Border.all(color: colorScheme.outlineVariant),
-          ),
-          child: Row(
-            children: [
-              Expanded(
-                child: Text(
-                  'Pontuação total da linguagem receptiva',
-                  style: TextStyle(
-                    fontWeight: FontWeight.w600,
-                    color: colorScheme.onSurface,
-                  ),
-                ),
-              ),
-              Text(
-                '$_receptivaTotal',
-                style: TextStyle(
-                  fontSize: 18,
-                  fontWeight: FontWeight.bold,
-                  color: colorScheme.primary,
-                ),
-              ),
-            ],
-          ),
-        ),
-      ],
-    );
-
-    final expressivaContent = _buildColumnCard(
-      title: 'LINGUAGEM EXPRESSIVA',
-      children: [
-        _buildExpressivaQuestion(
-          title:
-              '1. Participa de brincadeiras com outra pessoa pelo período de 1 a 2 minutos.',
-          score: _q1ExpScore,
-          meetsCriteria: _q1ExpMet,
-          onMeetsCriteriaChanged: (v) => _q1ExpMet = v,
-          description:
-              'Material: um marcador de tempo (ex.: celular), paninho e brinquedos.\n'
-              'Procedimento: solicitar ao acompanhante que brinque com a criança como faria em casa. O examinador poderá observar e anotar o interesse da criança pelos brinquedos.',
-          inputLabel: 'Anotações da observação',
-          inputController: _q1ExpText,
-          scoreInfo:
-              '1 ponto: quando a criança mantém o contato do olhar e demonstra prazer com a brincadeira. Quando este comportamento é observado em outro momento na sessão de avaliação ou o cuidador relata este comportamento no contexto.',
-        ),
-        _buildExpressivaQuestion(
-          title: '2. Comunica-se de forma gestual.',
-          score: _q2ExpScore,
-          meetsCriteria: _q2ExpMet,
-          onMeetsCriteriaChanged: (v) => _q2ExpMet = v,
-          description:
-              'Material: brinquedos.\n'
-              'Procedimento: o examinador ou o cuidador brinca com a criança. O examinador observa e anota a comunicação gestual da criança.',
-          inputLabel: 'Gestos observados',
-          inputController: _q2ExpText,
-          scoreInfo:
-              '1 ponto: quando observado, no período de avaliação, um ou mais comportamentos da criança usando gestos com intenção de se comunicar (exemplos: estender um objeto para o examinador ou para o cuidador, apontar para um objeto ou para uma pessoa, balançar a mão dando adeus).',
-        ),
-        _buildExpressivaQuestion(
-          title:
-              '3. A criança vocaliza sem que movimentos de pernas e de braços acompanhem a emissão dos sons.',
-          score: _q3ExpScore,
-          meetsCriteria: _q3ExpMet,
-          onMeetsCriteriaChanged: (v) => _q3ExpMet = v,
-          description:
-              'Material: brinquedos.\n'
-              'Procedimento: o cuidador ou o examinador se posiciona frente à criança, de forma que esta possa ver o seu rosto, sorri e verbaliza, imitando os sons que fez durante a sessão de avaliação ou que têm sido observados em casa.',
-          inputLabel: 'Vocalizações observadas',
-          inputController: _q3ExpText,
-          scoreInfo:
-              '1 ponto: quando o examinador ou o cuidador fala com a criança e esta responde vocalizando sem movimentos do corpo.',
-        ),
-        Container(
-          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
-          decoration: BoxDecoration(
-            color: colorScheme.surfaceContainerHighest,
-            borderRadius: BorderRadius.circular(8),
-            border: Border.all(color: colorScheme.outlineVariant),
-          ),
-          child: Row(
-            children: [
-              Expanded(
-                child: Text(
-                  'Pontuação total da linguagem expressiva',
-                  style: TextStyle(
-                    fontWeight: FontWeight.w600,
-                    color: colorScheme.onSurface,
-                  ),
-                ),
-              ),
-              Text(
-                '$_expressivaTotal',
-                style: TextStyle(
-                  fontSize: 18,
-                  fontWeight: FontWeight.bold,
-                  color: colorScheme.primary,
-                ),
-              ),
-            ],
-          ),
-        ),
-      ],
-    );
-
     return Scaffold(
-      backgroundColor: colorScheme.surface,
       appBar: AppBar(
         title: Text(
           widget.protocol == null
@@ -729,106 +1250,73 @@ class _AdlProtocolPageState extends State<AdlProtocolPage> {
               : 'Editar Protocolo ADL',
         ),
       ),
-      body: SingleChildScrollView(
-        padding: const EdgeInsets.all(16),
-        child: Center(
-          child: ConstrainedBox(
-            constraints: const BoxConstraints(maxWidth: 1100),
-            child: Form(
-              key: _formKey,
-              child: Column(
+      body: SafeArea(
+        child: Form(
+          key: _formKey,
+          child: LayoutBuilder(
+            builder: (context, constraints) {
+              final showSidebar = constraints.maxWidth >= 980;
+              final content = Column(
                 crossAxisAlignment: CrossAxisAlignment.stretch,
                 children: [
-                  // Cabecalho
-                  Container(
-                    decoration: BoxDecoration(
-                      color: colorScheme.surfaceContainerLow,
-                      border: Border.all(color: colorScheme.outlineVariant),
-                      borderRadius: BorderRadius.circular(6),
-                    ),
-                    padding: const EdgeInsets.symmetric(
-                      vertical: 14,
-                      horizontal: 16,
-                    ),
-                    margin: const EdgeInsets.only(bottom: 16),
-                    child: Column(
-                      children: [
-                        Text(
-                          'FONOAUDIOLOGIA',
-                          textAlign: TextAlign.center,
-                          style: TextStyle(
-                            fontWeight: FontWeight.bold,
-                            fontSize: 16,
-                            color: colorScheme.onSurface,
-                          ),
-                        ),
-                        SizedBox(height: 4),
-                        Text(
-                          'ADL\nPROTOCOLO DE APLICAÇÃO E PONTUAÇÃO',
-                          textAlign: TextAlign.center,
-                          style: TextStyle(
-                            fontSize: 13,
-                            color: colorScheme.onSurfaceVariant,
-                          ),
-                        ),
-                      ],
-                    ),
+                  _buildPageHeader(),
+                  const SizedBox(height: 16),
+                  if (!showSidebar) ...[
+                    _buildCompactSummary(),
+                    const SizedBox(height: 16),
+                  ],
+                  _buildProgressCard(),
+                  const SizedBox(height: 16),
+                  AnimatedSwitcher(
+                    duration: const Duration(milliseconds: 220),
+                    child: _buildCurrentStep(),
                   ),
-                  // Faixa etaria
-                  Container(
-                    decoration: BoxDecoration(
-                      color: colorScheme.surfaceContainerHighest,
-                      borderRadius: BorderRadius.circular(6),
-                    ),
-                    padding: const EdgeInsets.symmetric(
-                      vertical: 8,
-                      horizontal: 12,
-                    ),
-                    margin: const EdgeInsets.only(bottom: 16),
-                    child: Text(
-                      '1 ano a 1 ano e 5 meses',
-                      textAlign: TextAlign.center,
-                      style: TextStyle(
-                        fontWeight: FontWeight.bold,
-                        fontSize: 15,
-                        color: colorScheme.onSurface,
-                      ),
-                    ),
-                  ),
-                  // Colunas
-                  if (isWide)
-                    IntrinsicHeight(
-                      child: Row(
-                        crossAxisAlignment: CrossAxisAlignment.stretch,
-                        children: [
-                          Expanded(child: receptivaContent),
-                          const SizedBox(width: 12),
-                          Expanded(child: expressivaContent),
-                        ],
-                      ),
-                    )
-                  else
-                    Column(
-                      children: [
-                        receptivaContent,
-                        const SizedBox(height: 12),
-                        expressivaContent,
-                      ],
-                    ),
-                  const SizedBox(height: 20),
-                  ElevatedButton(
-                    onPressed: _save,
-                    child: const Padding(
-                      padding: EdgeInsets.symmetric(vertical: 14),
-                      child: Text('Salvar Protocolo'),
-                    ),
-                  ),
+                  const SizedBox(height: 16),
+                  _buildBottomNavigation(),
                 ],
-              ),
-            ),
+              );
+
+              return Center(
+                child: ConstrainedBox(
+                  constraints: const BoxConstraints(maxWidth: 1280),
+                  child: Padding(
+                    padding: const EdgeInsets.all(16),
+                    child: showSidebar
+                        ? Row(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              SizedBox(
+                                width: 310,
+                                child: SingleChildScrollView(
+                                  child: _buildSidebar(),
+                                ),
+                              ),
+                              const SizedBox(width: 16),
+                              Expanded(
+                                child: SingleChildScrollView(child: content),
+                              ),
+                            ],
+                          )
+                        : SingleChildScrollView(child: content),
+                  ),
+                ),
+              );
+            },
           ),
         ),
       ),
     );
   }
+}
+
+class _AdlStepMeta {
+  const _AdlStepMeta({
+    required this.title,
+    required this.subtitle,
+    required this.icon,
+  });
+
+  final String title;
+  final String subtitle;
+  final IconData icon;
 }
