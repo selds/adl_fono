@@ -106,18 +106,30 @@ class AuthService {
     final emailValue = data['email'];
     final roleValue = data['role'];
     final isActiveValue = data['isActive'];
+    final docDisplayName = (data['displayName'] as String?)?.trim() ?? '';
+    final legacyName = (data['name'] as String?)?.trim() ?? '';
+    final authDisplayName = (user.displayName ?? '').trim();
+    final resolvedDisplayName = docDisplayName.isNotEmpty
+      ? docDisplayName
+      : (legacyName.isNotEmpty
+          ? legacyName
+          : (authDisplayName.isNotEmpty
+            ? authDisplayName
+            : _deriveDisplayNameFromEmail(email)));
+    final docPhoto = (data['photoUrl'] as String?)?.trim() ?? '';
+    final authPhoto = (user.photoURL ?? '').trim();
+    final resolvedPhotoUrl = docPhoto.isNotEmpty ? docPhoto : authPhoto;
+
     final patched = <String, dynamic>{
       ...data,
       'uid': uidValue is String && uidValue.isNotEmpty ? uidValue : user.uid,
       'email': emailValue is String && emailValue.isNotEmpty
           ? emailValue
           : email,
-      'displayName': data.containsKey('displayName')
-          ? data['displayName']
-          : user.displayName,
-      'photoUrl': data.containsKey('photoUrl')
-          ? data['photoUrl']
-          : user.photoURL,
+      'displayName': resolvedDisplayName,
+      // Campo legado mantido para compatibilidade com dados antigos.
+      'name': resolvedDisplayName,
+      'photoUrl': resolvedPhotoUrl,
       'role': roleValue is String && roleValue.isNotEmpty
           ? roleValue
           : UserRole.fonoaudiologo.value,
@@ -130,6 +142,7 @@ class AuthService {
     final needsPatch =
         data['uid'] is! String ||
         data['email'] is! String ||
+      docDisplayName.isEmpty ||
         data['role'] is! String ||
         data['createdAt'] == null ||
         data['isActive'] is! bool;
@@ -137,6 +150,12 @@ class AuthService {
     // Se o documento foi criado manualmente sem campos obrigatórios, completa aqui.
     if (needsPatch) {
       await userRef.set(patched, SetOptions(merge: true));
+    }
+
+    if ((user.displayName ?? '').trim() != resolvedDisplayName) {
+      try {
+        await user.updateDisplayName(resolvedDisplayName);
+      } catch (_) {}
     }
 
     return AppUser.fromJson(patched);
@@ -188,6 +207,8 @@ class AuthService {
     await _firestore.collection(_usersCollection).doc(user.uid).set({
       'uid': user.uid,
       'displayName': normalizedName,
+      // Campo legado para telas antigas que ainda referenciem name.
+      'name': normalizedName,
       'photoUrl': normalizedPhoto,
       'email': user.email ?? '',
       'updatedAt': Timestamp.now(),
@@ -207,7 +228,7 @@ class AuthService {
     }
 
     final extension = _extensionFromName(file.name);
-    final path = 'profile_photos/${user.uid}/avatar_$extension';
+    final path = 'profile_photos/${user.uid}/avatar.$extension';
     final ref = _storage.ref().child(path);
 
     final metadata = SettableMetadata(
@@ -246,6 +267,14 @@ class AuthService {
       default:
         return 'image/jpeg';
     }
+  }
+
+  static String _deriveDisplayNameFromEmail(String email) {
+    final normalized = email.trim();
+    if (normalized.isEmpty) return 'Usuário';
+    final at = normalized.indexOf('@');
+    if (at <= 0) return normalized;
+    return normalized.substring(0, at);
   }
 
   /// Cria novo usuário com role especificado.
@@ -287,7 +316,7 @@ class AuthService {
       await _firestore
           .collection(_usersCollection)
           .doc(user.uid)
-          .set(appUser.toJson());
+          .set({...appUser.toJson(), 'name': displayName});
     } on FirebaseAuthException {
       rethrow;
     } finally {
