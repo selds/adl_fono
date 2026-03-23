@@ -338,6 +338,15 @@ class _UserManagementPageState extends State<UserManagementPage> {
               itemCount: users.length,
               itemBuilder: (context, index) {
                 final user = users[index];
+                final trimmedName = (user.displayName ?? '').trim();
+                final fallbackFromEmail = user.email.contains('@')
+                  ? user.email.split('@').first
+                  : user.email;
+                final displayName = trimmedName.isNotEmpty
+                  ? trimmedName
+                  : (fallbackFromEmail.isNotEmpty
+                      ? fallbackFromEmail
+                      : 'Sem nome');
                 final roleLabel = user.role == UserRole.admin
                     ? 'Administrador'
                     : 'Fonoaudiólogo';
@@ -362,7 +371,7 @@ class _UserManagementPageState extends State<UserManagementPage> {
                         color: Colors.white,
                       ),
                     ),
-                    title: Text(user.displayName ?? 'Sem nome'),
+                    title: Text(displayName),
                     subtitle: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
