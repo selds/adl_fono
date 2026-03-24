@@ -1,6 +1,7 @@
 ﻿import 'package:flutter/material.dart';
 
 import 'models/adl_protocol.dart';
+import 'models/paciente_ficha.dart';
 
 class AdlProtocolPage extends StatefulWidget {
   const AdlProtocolPage({super.key, required this.pacienteId, this.protocol});
@@ -15,6 +16,7 @@ class AdlProtocolPage extends StatefulWidget {
 class _AdlProtocolPageState extends State<AdlProtocolPage> {
   final _formKey = GlobalKey<FormState>();
   late final List<_AdlAgeGroup> _groups;
+  late String _nomeCrianca;
 
   final Map<String, bool?> _answers = <String, bool?>{};
   final Map<String, TextEditingController> _notesControllers =
@@ -27,6 +29,17 @@ class _AdlProtocolPageState extends State<AdlProtocolPage> {
     super.initState();
     _groups = _buildComprehensiveGroups();
     _loadExistingAnswers();
+    _loadPacienteName();
+  }
+
+  void _loadPacienteName() {
+    try {
+      final fichas = FichaRepository.all;
+      final ficha = fichas.firstWhere((f) => f.id == widget.pacienteId);
+      _nomeCrianca = ficha.nomeCrianca;
+    } catch (e) {
+      _nomeCrianca = 'Paciente';
+    }
   }
 
   void _loadExistingAnswers() {
@@ -478,7 +491,7 @@ class _AdlProtocolPageState extends State<AdlProtocolPage> {
               ),
               Chip(
                 avatar: const Icon(Icons.person_outline, size: 18),
-                label: Text('Paciente ${widget.pacienteId.substring(0, 8)}'),
+                label: Text('Paciente: $_nomeCrianca'),
                 side: BorderSide.none,
               ),
             ],
