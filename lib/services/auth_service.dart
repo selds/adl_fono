@@ -5,6 +5,7 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:firebase_storage/firebase_storage.dart';
 import 'package:adl_fono/firebase_options.dart';
+import 'package:flutter/foundation.dart';
 import 'package:image_picker/image_picker.dart';
 
 /// Serviço centralizado para gerenciar autenticação e usuários.
@@ -229,8 +230,6 @@ class AuthService {
 
     final extension = _extensionFromName(file.name);
     final path = 'profile_photos/${user.uid}/avatar.$extension';
-    final ref = _storage.ref().child(path);
-
     final metadata = SettableMetadata(
       contentType: _contentTypeForExtension(extension),
       customMetadata: {
@@ -239,8 +238,54 @@ class AuthService {
       },
     );
 
-    await ref.putData(bytes, metadata);
-    return ref.getDownloadURL();
+    final storageCandidates = _buildStorageCandidates();
+    Exception? lastError;
+
+    for (final storage in storageCandidates) {
+      try {
+        final ref = storage.ref().child(path);
+        await ref.putData(bytes, metadata);
+        return await ref.getDownloadURL();
+      } on FirebaseException catch (e) {
+        lastError = Exception(e.message ?? e.code);
+      } catch (e) {
+        lastError = Exception(e.toString());
+      }
+    }
+
+    final webHint = kIsWeb
+        ? ' Verifique também CORS do Storage para o domínio da aplicação.'
+        : '';
+    throw Exception(
+      'Falha ao enviar foto de perfil.$webHint ${lastError ?? ''}'.trim(),
+    );
+  }
+
+  static List<FirebaseStorage> _buildStorageCandidates() {
+    final candidates = <FirebaseStorage>[_storage];
+
+    final configuredBucket = (Firebase.app().options.storageBucket ?? '')
+        .trim();
+    if (configuredBucket.isNotEmpty) {
+      final normalized = configuredBucket.replaceFirst('gs://', '');
+      candidates.add(FirebaseStorage.instanceFor(bucket: 'gs://$normalized'));
+    }
+
+    // Fallbacks para ambientes com opções incompletas em build web.
+    candidates.addAll([
+      FirebaseStorage.instanceFor(bucket: 'gs://adl-fono.firebasestorage.app'),
+      FirebaseStorage.instanceFor(bucket: 'gs://adl-fono.appspot.com'),
+    ]);
+
+    final seen = <String>{};
+    return candidates
+        .where((storage) {
+          final key = storage.bucket;
+          if (seen.contains(key)) return false;
+          seen.add(key);
+          return true;
+        })
+        .toList(growable: false);
   }
 
   static String _extensionFromName(String name) {
