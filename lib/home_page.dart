@@ -178,6 +178,7 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
+        automaticallyImplyLeading: false,
         title: const Text('Avaliação do Desenvolvimento da Linguagem 2 - ADL'),
         centerTitle: true,
         actions: [
