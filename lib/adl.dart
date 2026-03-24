@@ -325,45 +325,7 @@ class _FichaPacientePageState extends State<FichaPacientePage> {
         elevation: 0,
         foregroundColor: Colors.white,
         surfaceTintColor: Colors.transparent,
-        titleSpacing: 0,
-        title: Row(
-          children: [
-            PopupMenuButton<String>(
-              icon: const Icon(Icons.menu),
-              tooltip: 'Menu',
-              onSelected: (value) {
-                switch (value) {
-                  case 'history':
-                    Navigator.of(context).pushNamed('/history');
-                    break;
-                  case 'settings':
-                    _showAlert('Em construção...');
-                    break;
-                  case 'help':
-                    _showAlert('Em construção...');
-                    break;
-                  case 'adl':
-                    Navigator.of(
-                      context,
-                    ).pushNamed('/adl', arguments: {'pacienteId': _pacienteId});
-                    break;
-                  case 'exit':
-                    Navigator.of(context).pushNamed('/login');
-                    break;
-                }
-              },
-              itemBuilder: (context) => const [
-                PopupMenuItem(value: 'history', child: Text('Histórico')),
-                PopupMenuItem(value: 'adl', child: Text('Protocolo ADL')),
-                PopupMenuItem(value: 'settings', child: Text('Configurações')),
-                PopupMenuItem(value: 'help', child: Text('Ajuda')),
-                PopupMenuItem(value: 'exit', child: Text('Sair')),
-              ],
-            ),
-            const SizedBox(width: 8),
-            const Text('Menu', style: TextStyle(fontWeight: FontWeight.w600)),
-          ],
-        ),
+        title: const Text('Anamnese'),
         flexibleSpace: Container(
           decoration: BoxDecoration(gradient: primaryGradient),
         ),
