@@ -9,6 +9,8 @@ import 'package:adl_fono/login.dart';
 import 'package:adl_fono/models/adl_protocol.dart';
 import 'package:adl_fono/models/app_user.dart';
 import 'package:adl_fono/models/paciente_ficha.dart';
+import 'package:adl_fono/report_page.dart';
+import 'package:adl_fono/scores_page.dart';
 import 'package:adl_fono/services/auth_service.dart';
 import 'package:adl_fono/services/theme_service.dart';
 import 'package:adl_fono/widgets/session_guard.dart';
@@ -90,6 +92,8 @@ class _MainAppState extends State<MainApp> {
           );
         },
         '/anamnese': (_) => const SessionGuard(child: FichaPacientePage()),
+        '/scores': (_) => const SessionGuard(child: ScoresPage()),
+        '/report': (_) => const SessionGuard(child: ReportPage()),
         '/history': (_) => const SessionGuard(child: HistoryPage()),
         '/adl': (context) {
           final args =
