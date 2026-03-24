@@ -20,14 +20,17 @@ class _AdlProtocolPageState extends State<AdlProtocolPage> {
   late final TextEditingController _q7Score;
   late final TextEditingController _q8Score;
 
-  bool? _q5a, _q5b, _q5c;
+  bool? _q5a, _q5b;
+  bool? _q5c; // TODO: pergunta futura — sem UI implementada
   late final TextEditingController _q5aText;
   late final TextEditingController _q5bText;
 
-  bool? _q6a, _q6b, _q6c, _q6d, _q6e, _q6f;
+  bool? _q6a, _q6b;
+  bool? _q6c, _q6d, _q6e, _q6f; // TODO: perguntas futuras — sem UI implementada
   late final TextEditingController _q6aText;
   late final TextEditingController _q6bText;
 
+  // TODO: Q7 e Q8 — perguntas futuras declaradas e persistidas, sem UI implementada
   bool? _q7a, _q7b, _q7c, _q7d, _q7e, _q7f, _q7g;
   bool? _q8a, _q8b, _q8c;
 
@@ -40,6 +43,7 @@ class _AdlProtocolPageState extends State<AdlProtocolPage> {
   late final TextEditingController _q3ExpScore;
   late final TextEditingController _q3ExpText;
   bool? _q3ExpMet;
+  // TODO: Q4 expressiva — persistida mas sem UI implementada
   late final TextEditingController _q4ExpScore;
   late final TextEditingController _q4ExpText;
 
@@ -76,6 +80,36 @@ class _AdlProtocolPageState extends State<AdlProtocolPage> {
 
   bool get _isFirstStep => _selectedStepIndex == 0;
   bool get _isLastStep => _selectedStepIndex == _steps.length - 1;
+
+  LinearGradient _primaryGradientFor(Brightness brightness) {
+    if (brightness == Brightness.dark) {
+      return const LinearGradient(
+        colors: [Color(0xFF3D4DA8), Color(0xFF5A3C86)],
+        begin: Alignment.centerLeft,
+        end: Alignment.centerRight,
+      );
+    }
+    return const LinearGradient(
+      colors: [Color(0xFF667eea), Color(0xFF764ba2)],
+      begin: Alignment.centerLeft,
+      end: Alignment.centerRight,
+    );
+  }
+
+  LinearGradient _backgroundGradientFor(Brightness brightness) {
+    if (brightness == Brightness.dark) {
+      return const LinearGradient(
+        colors: [Color(0xFF11141C), Color(0xFF1A1F2B)],
+        begin: Alignment.topCenter,
+        end: Alignment.bottomCenter,
+      );
+    }
+    return const LinearGradient(
+      colors: [Color(0xFFF3F5FB), Color(0xFFEDEFF7)],
+      begin: Alignment.topCenter,
+      end: Alignment.bottomCenter,
+    );
+  }
 
   @override
   void initState() {
@@ -564,16 +598,13 @@ class _AdlProtocolPageState extends State<AdlProtocolPage> {
   }) {
     final theme = Theme.of(context);
     final colorScheme = theme.colorScheme;
-    final headerColor = theme.brightness == Brightness.dark
-        ? colorScheme.primaryContainer
-        : const Color(0xFF667eea);
-    final onHeaderColor = theme.brightness == Brightness.dark
-        ? colorScheme.onPrimaryContainer
-        : Colors.white;
+    final primaryGradient = _primaryGradientFor(theme.brightness);
 
     return Card(
       elevation: 3,
-      color: colorScheme.surfaceContainerLow,
+      color: theme.brightness == Brightness.dark
+          ? colorScheme.surfaceContainerLow
+          : Colors.white.withAlpha((0.94 * 255).round()),
       surfaceTintColor: Colors.transparent,
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
       clipBehavior: Clip.antiAlias,
@@ -581,13 +612,13 @@ class _AdlProtocolPageState extends State<AdlProtocolPage> {
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
           Container(
-            color: headerColor,
+            decoration: BoxDecoration(gradient: primaryGradient),
             padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 14),
             child: Text(
               title,
               textAlign: TextAlign.center,
-              style: TextStyle(
-                color: onHeaderColor,
+              style: const TextStyle(
+                color: Colors.white,
                 fontWeight: FontWeight.bold,
                 fontSize: 14,
                 letterSpacing: 0.4,
@@ -652,11 +683,11 @@ class _AdlProtocolPageState extends State<AdlProtocolPage> {
   }
 
   Widget _buildPageHeader() {
-    final colorScheme = Theme.of(context).colorScheme;
+    final theme = Theme.of(context);
+    final primaryGradient = _primaryGradientFor(theme.brightness);
     return Container(
       decoration: BoxDecoration(
-        color: colorScheme.surfaceContainerLow,
-        border: Border.all(color: colorScheme.outlineVariant),
+        gradient: primaryGradient,
         borderRadius: BorderRadius.circular(12),
       ),
       padding: const EdgeInsets.all(16),
@@ -667,10 +698,10 @@ class _AdlProtocolPageState extends State<AdlProtocolPage> {
             widget.protocol == null
                 ? 'Novo Protocolo ADL'
                 : 'Editar Protocolo ADL',
-            style: TextStyle(
+            style: const TextStyle(
               fontSize: 20,
               fontWeight: FontWeight.bold,
-              color: colorScheme.onSurface,
+              color: Colors.white,
             ),
           ),
           const SizedBox(height: 8),
@@ -681,21 +712,25 @@ class _AdlProtocolPageState extends State<AdlProtocolPage> {
               Chip(
                 avatar: const Icon(Icons.schedule, size: 18),
                 label: const Text(_ageBandLabel),
-                backgroundColor: colorScheme.secondaryContainer,
+                backgroundColor: Colors.white.withAlpha(46),
+                labelStyle: const TextStyle(color: Colors.white),
+                iconTheme: const IconThemeData(color: Colors.white),
                 side: BorderSide.none,
               ),
               Chip(
                 avatar: const Icon(Icons.folder_shared_outlined, size: 18),
                 label: Text('Paciente ${widget.pacienteId.substring(0, 8)}'),
-                backgroundColor: colorScheme.surfaceContainerHighest,
+                backgroundColor: Colors.white.withAlpha(38),
+                labelStyle: const TextStyle(color: Colors.white),
+                iconTheme: const IconThemeData(color: Colors.white),
                 side: BorderSide.none,
               ),
             ],
           ),
           const SizedBox(height: 10),
-          Text(
+          const Text(
             'A tela foi dividida em etapas curtas para evitar formulários extensos. Use o sumário para navegar entre as seções e acompanhar a faixa etária atual.',
-            style: TextStyle(color: colorScheme.onSurfaceVariant),
+            style: TextStyle(color: Colors.white),
           ),
         ],
       ),
@@ -703,13 +738,17 @@ class _AdlProtocolPageState extends State<AdlProtocolPage> {
   }
 
   Widget _buildProgressCard() {
-    final colorScheme = Theme.of(context).colorScheme;
+    final theme = Theme.of(context);
+    final colorScheme = theme.colorScheme;
+    final cardColor = theme.brightness == Brightness.dark
+        ? colorScheme.surfaceContainerLow
+        : Colors.white.withAlpha((0.92 * 255).round());
     final currentStep = _selectedStepIndex + 1;
     final progress = currentStep / _steps.length;
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: colorScheme.surfaceContainerLow,
+        color: cardColor,
         borderRadius: BorderRadius.circular(12),
         border: Border.all(color: colorScheme.outlineVariant),
       ),
@@ -744,11 +783,15 @@ class _AdlProtocolPageState extends State<AdlProtocolPage> {
   }
 
   Widget _buildSidebar() {
-    final colorScheme = Theme.of(context).colorScheme;
+    final theme = Theme.of(context);
+    final colorScheme = theme.colorScheme;
+    final primaryGradient = _primaryGradientFor(theme.brightness);
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: colorScheme.surfaceContainerLow,
+        color: theme.brightness == Brightness.dark
+            ? colorScheme.surfaceContainerLow
+            : Colors.white.withAlpha((0.92 * 255).round()),
         borderRadius: BorderRadius.circular(12),
         border: Border.all(color: colorScheme.outlineVariant),
       ),
@@ -784,8 +827,9 @@ class _AdlProtocolPageState extends State<AdlProtocolPage> {
                   duration: const Duration(milliseconds: 180),
                   padding: const EdgeInsets.all(12),
                   decoration: BoxDecoration(
+                    gradient: selected ? primaryGradient : null,
                     color: selected
-                        ? colorScheme.primaryContainer
+                        ? null
                         : colorScheme.surfaceContainerHighest,
                     borderRadius: BorderRadius.circular(12),
                     border: Border.all(
@@ -800,10 +844,10 @@ class _AdlProtocolPageState extends State<AdlProtocolPage> {
                       CircleAvatar(
                         radius: 18,
                         backgroundColor: selected
-                            ? colorScheme.primary
+                            ? Colors.white
                             : colorScheme.surface,
                         foregroundColor: selected
-                            ? colorScheme.onPrimary
+                            ? const Color(0xFF667eea)
                             : colorScheme.primary,
                         child: Icon(step.icon, size: 18),
                       ),
@@ -817,7 +861,7 @@ class _AdlProtocolPageState extends State<AdlProtocolPage> {
                               style: TextStyle(
                                 fontWeight: FontWeight.w600,
                                 color: selected
-                                    ? colorScheme.onPrimaryContainer
+                                    ? Colors.white
                                     : colorScheme.onSurface,
                               ),
                             ),
@@ -827,7 +871,7 @@ class _AdlProtocolPageState extends State<AdlProtocolPage> {
                               style: TextStyle(
                                 fontSize: 12,
                                 color: selected
-                                    ? colorScheme.onPrimaryContainer
+                                    ? Colors.white
                                     : colorScheme.onSurfaceVariant,
                               ),
                             ),
@@ -846,11 +890,14 @@ class _AdlProtocolPageState extends State<AdlProtocolPage> {
   }
 
   Widget _buildCompactSummary() {
-    final colorScheme = Theme.of(context).colorScheme;
+    final theme = Theme.of(context);
+    final colorScheme = theme.colorScheme;
     return Container(
       padding: const EdgeInsets.all(14),
       decoration: BoxDecoration(
-        color: colorScheme.surfaceContainerLow,
+        color: theme.brightness == Brightness.dark
+            ? colorScheme.surfaceContainerLow
+            : Colors.white.withAlpha((0.92 * 255).round()),
         borderRadius: BorderRadius.circular(12),
         border: Border.all(color: colorScheme.outlineVariant),
       ),
@@ -886,12 +933,15 @@ class _AdlProtocolPageState extends State<AdlProtocolPage> {
     required String subtitle,
     required List<Widget> children,
   }) {
-    final colorScheme = Theme.of(context).colorScheme;
+    final theme = Theme.of(context);
+    final colorScheme = theme.colorScheme;
     return Container(
       key: ValueKey(_selectedStepIndex),
       padding: const EdgeInsets.all(18),
       decoration: BoxDecoration(
-        color: colorScheme.surfaceContainerLow,
+        color: theme.brightness == Brightness.dark
+            ? colorScheme.surfaceContainerLow
+            : Colors.white.withAlpha((0.94 * 255).round()),
         borderRadius: BorderRadius.circular(16),
         border: Border.all(color: colorScheme.outlineVariant),
       ),
@@ -1242,66 +1292,81 @@ class _AdlProtocolPageState extends State<AdlProtocolPage> {
 
   @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final primaryGradient = _primaryGradientFor(theme.brightness);
+    final backgroundGradient = _backgroundGradientFor(theme.brightness);
+
     return Scaffold(
+      backgroundColor: Colors.transparent,
       appBar: AppBar(
+        backgroundColor: Colors.transparent,
+        elevation: 0,
+        surfaceTintColor: Colors.transparent,
+        foregroundColor: Colors.white,
         title: Text(
           widget.protocol == null
               ? 'Novo Protocolo ADL'
               : 'Editar Protocolo ADL',
         ),
+        flexibleSpace: Container(
+          decoration: BoxDecoration(gradient: primaryGradient),
+        ),
       ),
-      body: SafeArea(
-        child: Form(
-          key: _formKey,
-          child: LayoutBuilder(
-            builder: (context, constraints) {
-              final showSidebar = constraints.maxWidth >= 980;
-              final content = Column(
-                crossAxisAlignment: CrossAxisAlignment.stretch,
-                children: [
-                  _buildPageHeader(),
-                  const SizedBox(height: 16),
-                  if (!showSidebar) ...[
-                    _buildCompactSummary(),
+      body: Container(
+        decoration: BoxDecoration(gradient: backgroundGradient),
+        child: SafeArea(
+          child: Form(
+            key: _formKey,
+            child: LayoutBuilder(
+              builder: (context, constraints) {
+                final showSidebar = constraints.maxWidth >= 980;
+                final content = Column(
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                  children: [
+                    _buildPageHeader(),
                     const SizedBox(height: 16),
+                    if (!showSidebar) ...[
+                      _buildCompactSummary(),
+                      const SizedBox(height: 16),
+                    ],
+                    _buildProgressCard(),
+                    const SizedBox(height: 16),
+                    AnimatedSwitcher(
+                      duration: const Duration(milliseconds: 220),
+                      child: _buildCurrentStep(),
+                    ),
+                    const SizedBox(height: 16),
+                    _buildBottomNavigation(),
                   ],
-                  _buildProgressCard(),
-                  const SizedBox(height: 16),
-                  AnimatedSwitcher(
-                    duration: const Duration(milliseconds: 220),
-                    child: _buildCurrentStep(),
-                  ),
-                  const SizedBox(height: 16),
-                  _buildBottomNavigation(),
-                ],
-              );
+                );
 
-              return Center(
-                child: ConstrainedBox(
-                  constraints: const BoxConstraints(maxWidth: 1280),
-                  child: Padding(
-                    padding: const EdgeInsets.all(16),
-                    child: showSidebar
-                        ? Row(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              SizedBox(
-                                width: 310,
-                                child: SingleChildScrollView(
-                                  child: _buildSidebar(),
+                return Center(
+                  child: ConstrainedBox(
+                    constraints: const BoxConstraints(maxWidth: 1280),
+                    child: Padding(
+                      padding: const EdgeInsets.all(16),
+                      child: showSidebar
+                          ? Row(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                SizedBox(
+                                  width: 310,
+                                  child: SingleChildScrollView(
+                                    child: _buildSidebar(),
+                                  ),
                                 ),
-                              ),
-                              const SizedBox(width: 16),
-                              Expanded(
-                                child: SingleChildScrollView(child: content),
-                              ),
-                            ],
-                          )
-                        : SingleChildScrollView(child: content),
+                                const SizedBox(width: 16),
+                                Expanded(
+                                  child: SingleChildScrollView(child: content),
+                                ),
+                              ],
+                            )
+                          : SingleChildScrollView(child: content),
+                    ),
                   ),
-                ),
-              );
-            },
+                );
+              },
+            ),
           ),
         ),
       ),
