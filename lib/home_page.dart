@@ -294,6 +294,23 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
                           .then((_) => _refreshUserAccess()),
                     ),
                     _ActionCard(
+                      label: 'Tabela dos Escores',
+                      icon: Icons.table_chart,
+                      color: const Color(0xFF43cea2),
+                      onTap:() => Navigator.of(context)
+                          .pushNamed('/scores')
+                          .then((_) => _refreshUserAccess()),
+                    ),
+                    _ActionCard(
+                      label: 'Gerar relatório',
+                      icon: Icons.insert_drive_file,
+                      color: const Color(0xFFff9966),
+                      onTap: () => Navigator.of(context)
+                          .pushNamed('/report')
+                          .then((_) => _refreshUserAccess()),
+
+                    ),
+                    _ActionCard(
                       label: 'Acessar histórico',
                       icon: Icons.history,
                       color: const Color(0xFF764ba2),
