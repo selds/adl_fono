@@ -240,12 +240,6 @@ class _AdlProtocolPageState extends State<AdlProtocolPage> {
     );
   }
 
-  void _goPreviousGroup() {
-    if (_selectedGroupIndex <= 0) return;
-    setState(() => _selectedGroupIndex -= 1);
-    _scrollToTop();
-  }
-
   void _goNextGroup() {
     if (_selectedGroupIndex >= _groups.length - 1) return;
     setState(() => _selectedGroupIndex += 1);
@@ -687,23 +681,12 @@ class _AdlProtocolPageState extends State<AdlProtocolPage> {
   }
 
   Widget _buildActionButtons() {
-    final isFirst = _selectedGroupIndex == 0;
     final isLast = _selectedGroupIndex == _groups.length - 1;
 
     return Wrap(
       spacing: 8,
       runSpacing: 8,
       children: [
-        OutlinedButton.icon(
-          onPressed: isFirst ? null : _goPreviousGroup,
-          icon: const Icon(Icons.chevron_left),
-          label: const Text('Faixa anterior'),
-        ),
-        OutlinedButton.icon(
-          onPressed: isLast ? null : _goNextGroup,
-          icon: const Icon(Icons.chevron_right),
-          label: const Text('Proxima faixa'),
-        ),
         OutlinedButton.icon(
           onPressed: _onSaveDraft,
           icon: const Icon(Icons.save_outlined),
@@ -718,25 +701,114 @@ class _AdlProtocolPageState extends State<AdlProtocolPage> {
     );
   }
 
-  Widget _buildCompactBandTabs() {
-    return DefaultTabController(
-      length: _groups.length,
-      initialIndex: _selectedGroupIndex,
-      child: TabBar(
-        isScrollable: true,
-        tabAlignment: TabAlignment.start,
-        onTap: (index) {
-          setState(() => _selectedGroupIndex = index);
-          _scrollToTop();
-        },
-        tabs: _groups
-            .map((group) => Tab(text: group.label))
-            .toList(growable: false),
-      ),
+  Future<void> _openQuickActionsMenu() async {
+    final isLast = _selectedGroupIndex == _groups.length - 1;
+
+    await showModalBottomSheet<void>(
+      context: context,
+      showDragHandle: true,
+      builder: (context) {
+        return SafeArea(
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              ListTile(
+                leading: const Icon(Icons.menu_book_outlined),
+                title: const Text('Indice de faixas'),
+                onTap: () async {
+                  Navigator.of(context).pop();
+                  await _openBandsMenu();
+                },
+              ),
+              ListTile(
+                leading: const Icon(Icons.save_outlined),
+                title: const Text('Salvar rascunho'),
+                onTap: () async {
+                  Navigator.of(context).pop();
+                  await _onSaveDraft();
+                },
+              ),
+              ListTile(
+                leading: Icon(
+                  isLast ? Icons.check_circle_outline : Icons.navigate_next,
+                ),
+                title: Text(isLast ? 'Concluir' : 'Avancar faixa'),
+                onTap: () async {
+                  Navigator.of(context).pop();
+                  if (isLast) {
+                    await _onFinishComprehensive();
+                  } else {
+                    _goNextGroup();
+                  }
+                },
+              ),
+            ],
+          ),
+        );
+      },
     );
   }
 
-  Widget _buildScrollableFormContent({required bool showTabs}) {
+  Future<void> _openBandsMenu() async {
+    await showModalBottomSheet<void>(
+      context: context,
+      isScrollControlled: true,
+      showDragHandle: true,
+      builder: (context) {
+        return SafeArea(
+          child: SizedBox(
+            height: MediaQuery.of(context).size.height * 0.72,
+            child: Column(
+              children: [
+                ListTile(
+                  title: const Text('Ir para faixa etaria'),
+                  subtitle: const Text('Selecione uma faixa para navegar'),
+                ),
+                const Divider(height: 1),
+                Expanded(
+                  child: ListView.separated(
+                    itemCount: _groups.length,
+                    separatorBuilder: (_, _) => const Divider(height: 1),
+                    itemBuilder: (context, index) {
+                      final group = _groups[index];
+                      final isSelected = index == _selectedGroupIndex;
+                      final isCompleted = _isCurrentGroupCompleted(group);
+
+                      return ListTile(
+                        selected: isSelected,
+                        leading: CircleAvatar(
+                          radius: 14,
+                          child: Text('${index + 1}'),
+                        ),
+                        title: Text(group.label),
+                        subtitle: Text(
+                          'Pontuacao: ${_groupScore(group)}/${group.questions.length}',
+                        ),
+                        trailing: isSelected
+                            ? const Icon(Icons.check_circle)
+                            : Icon(
+                                isCompleted
+                                    ? Icons.task_alt
+                                    : Icons.radio_button_unchecked,
+                              ),
+                        onTap: () {
+                          setState(() => _selectedGroupIndex = index);
+                          Navigator.of(context).pop();
+                          _scrollToTop();
+                        },
+                      );
+                    },
+                  ),
+                ),
+              ],
+            ),
+          ),
+        );
+      },
+    );
+  }
+
+  Widget _buildScrollableFormContent() {
     return SingleChildScrollView(
       controller: _scrollController,
       padding: const EdgeInsets.fromLTRB(16, 16, 16, 22),
@@ -745,10 +817,6 @@ class _AdlProtocolPageState extends State<AdlProtocolPage> {
         children: [
           _buildHeader(),
           const SizedBox(height: 16),
-          if (showTabs) ...[
-            _buildCompactBandTabs(),
-            const SizedBox(height: 12),
-          ],
           _buildActionButtons(),
           const SizedBox(height: 16),
           _buildGroupView(),
@@ -757,62 +825,25 @@ class _AdlProtocolPageState extends State<AdlProtocolPage> {
     );
   }
 
-  Widget _buildWideLayout() {
-    final width = MediaQuery.of(context).size.width;
-    final extendedRail = width >= 1200;
-
-    return Row(
-      children: [
-        NavigationRail(
-          selectedIndex: _selectedGroupIndex,
-          extended: extendedRail,
-          scrollable: true,
-          onDestinationSelected: (index) {
-            setState(() => _selectedGroupIndex = index);
-            _scrollToTop();
-          },
-          labelType: extendedRail ? null : NavigationRailLabelType.all,
-          destinations: List.generate(_groups.length, (index) {
-            return NavigationRailDestination(
-              icon: const Icon(Icons.radio_button_unchecked),
-              selectedIcon: const Icon(Icons.check_circle_outline),
-              label: Text(
-                _groups[index].label,
-                overflow: TextOverflow.ellipsis,
-              ),
-            );
-          }),
-        ),
-        const VerticalDivider(width: 1),
-        Expanded(
-          child: Center(
-            child: ConstrainedBox(
-              constraints: const BoxConstraints(maxWidth: 1200),
-              child: _buildScrollableFormContent(showTabs: false),
-            ),
-          ),
-        ),
-      ],
-    );
-  }
-
   @override
   Widget build(BuildContext context) {
-    final isWideLayout = MediaQuery.of(context).size.width >= 900;
-
     return Scaffold(
       appBar: AppBar(title: const Text('Protocolo ADL')),
+      floatingActionButton: FloatingActionButton(
+        onPressed: _openQuickActionsMenu,
+        tooltip: 'Acoes',
+        child: const Icon(Icons.more_vert),
+      ),
+      floatingActionButtonLocation: FloatingActionButtonLocation.endFloat,
       body: SafeArea(
         child: Form(
           key: _formKey,
-          child: isWideLayout
-              ? _buildWideLayout()
-              : Center(
-                  child: ConstrainedBox(
-                    constraints: const BoxConstraints(maxWidth: 1200),
-                    child: _buildScrollableFormContent(showTabs: true),
-                  ),
-                ),
+          child: Center(
+            child: ConstrainedBox(
+              constraints: const BoxConstraints(maxWidth: 1200),
+              child: _buildScrollableFormContent(),
+            ),
+          ),
         ),
       ),
     );
