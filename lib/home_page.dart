@@ -178,6 +178,7 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
+        automaticallyImplyLeading: false,
         title: const Text('Avaliação do Desenvolvimento da Linguagem 2 - ADL'),
         centerTitle: true,
         actions: [
@@ -276,6 +277,17 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
                           ),
                         ),
                       ],
+                    ),
+                  ),
+                ),
+                const SizedBox(height: 6),
+                Align(
+                  alignment: Alignment.centerRight,
+                  child: Opacity(
+                    opacity: 0.75,
+                    child: Text(
+                      'v1.0.0',
+                      style: Theme.of(context).textTheme.labelSmall,
                     ),
                   ),
                 ),
