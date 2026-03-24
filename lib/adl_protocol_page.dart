@@ -255,7 +255,11 @@ class _AdlProtocolPageState extends State<AdlProtocolPage> {
   void _scrollToTop() {
     Future.delayed(const Duration(milliseconds: 50), () {
       if (mounted && _scrollController.hasClients) {
-        _scrollController.animateTo(0, duration: const Duration(milliseconds: 300), curve: Curves.easeInOut);
+        _scrollController.animateTo(
+          0,
+          duration: const Duration(milliseconds: 300),
+          curve: Curves.easeInOut,
+        );
       }
     });
   }
@@ -270,9 +274,7 @@ class _AdlProtocolPageState extends State<AdlProtocolPage> {
             ? colorScheme.primaryContainer
             : colorScheme.surfaceContainerHighest,
         border: Border.all(
-          color: score == 1
-              ? colorScheme.primary
-              : colorScheme.outlineVariant,
+          color: score == 1 ? colorScheme.primary : colorScheme.outlineVariant,
         ),
         borderRadius: BorderRadius.circular(16),
       ),
@@ -684,95 +686,133 @@ class _AdlProtocolPageState extends State<AdlProtocolPage> {
     );
   }
 
-  Widget _buildBottomActionBar() {
+  Widget _buildActionButtons() {
     final isFirst = _selectedGroupIndex == 0;
     final isLast = _selectedGroupIndex == _groups.length - 1;
 
-    return BottomAppBar(
-      child: SizedBox(
-        height: 78,
-        child: Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 8),
-          child: Row(
-            children: [
-              IconButton(
-                tooltip: 'Faixa anterior',
-                onPressed: isFirst ? null : _goPreviousGroup,
-                icon: const Icon(Icons.chevron_left),
+    return Wrap(
+      spacing: 8,
+      runSpacing: 8,
+      children: [
+        OutlinedButton.icon(
+          onPressed: isFirst ? null : _goPreviousGroup,
+          icon: const Icon(Icons.chevron_left),
+          label: const Text('Faixa anterior'),
+        ),
+        OutlinedButton.icon(
+          onPressed: isLast ? null : _goNextGroup,
+          icon: const Icon(Icons.chevron_right),
+          label: const Text('Proxima faixa'),
+        ),
+        OutlinedButton.icon(
+          onPressed: _onSaveDraft,
+          icon: const Icon(Icons.save_outlined),
+          label: const Text('Salvar'),
+        ),
+        ElevatedButton.icon(
+          onPressed: isLast ? _onFinishComprehensive : _goNextGroup,
+          icon: Icon(isLast ? Icons.check_circle_outline : Icons.navigate_next),
+          label: Text(isLast ? 'Concluir' : 'Avancar'),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildCompactBandTabs() {
+    return DefaultTabController(
+      length: _groups.length,
+      initialIndex: _selectedGroupIndex,
+      child: TabBar(
+        isScrollable: true,
+        tabAlignment: TabAlignment.start,
+        onTap: (index) {
+          setState(() => _selectedGroupIndex = index);
+          _scrollToTop();
+        },
+        tabs: _groups
+            .map((group) => Tab(text: group.label))
+            .toList(growable: false),
+      ),
+    );
+  }
+
+  Widget _buildScrollableFormContent({required bool showTabs}) {
+    return SingleChildScrollView(
+      controller: _scrollController,
+      padding: const EdgeInsets.fromLTRB(16, 16, 16, 22),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          _buildHeader(),
+          const SizedBox(height: 16),
+          if (showTabs) ...[
+            _buildCompactBandTabs(),
+            const SizedBox(height: 12),
+          ],
+          _buildActionButtons(),
+          const SizedBox(height: 16),
+          _buildGroupView(),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildWideLayout() {
+    final width = MediaQuery.of(context).size.width;
+    final extendedRail = width >= 1200;
+
+    return Row(
+      children: [
+        NavigationRail(
+          selectedIndex: _selectedGroupIndex,
+          extended: extendedRail,
+          scrollable: true,
+          onDestinationSelected: (index) {
+            setState(() => _selectedGroupIndex = index);
+            _scrollToTop();
+          },
+          labelType: extendedRail ? null : NavigationRailLabelType.all,
+          destinations: List.generate(_groups.length, (index) {
+            return NavigationRailDestination(
+              icon: const Icon(Icons.radio_button_unchecked),
+              selectedIcon: const Icon(Icons.check_circle_outline),
+              label: Text(
+                _groups[index].label,
+                overflow: TextOverflow.ellipsis,
               ),
-              Expanded(
-                child: DropdownButtonFormField<int>(
-                  initialValue: _selectedGroupIndex,
-                  isExpanded: true,
-                  decoration: const InputDecoration(
-                    labelText: 'Faixa etaria',
-                    border: OutlineInputBorder(),
-                    isDense: true,
-                  ),
-                  items: List.generate(_groups.length, (index) {
-                    return DropdownMenuItem<int>(
-                      value: index,
-                      child: Text(_groups[index].label),
-                    );
-                  }),
-                  onChanged: (value) {
-                    if (value == null) return;
-                    setState(() => _selectedGroupIndex = value);
-                    _scrollToTop();
-                  },
-                ),
-              ),
-              IconButton(
-                tooltip: 'Proxima faixa',
-                onPressed: isLast ? null : _goNextGroup,
-                icon: const Icon(Icons.chevron_right),
-              ),
-              const SizedBox(width: 6),
-              OutlinedButton.icon(
-                onPressed: _onSaveDraft,
-                icon: const Icon(Icons.save_outlined),
-                label: const Text('Salvar'),
-              ),
-              const SizedBox(width: 6),
-              ElevatedButton.icon(
-                onPressed: isLast ? _onFinishComprehensive : _goNextGroup,
-                icon: Icon(
-                  isLast ? Icons.check_circle_outline : Icons.navigate_next,
-                ),
-                label: Text(isLast ? 'Concluir' : 'Avancar'),
-              ),
-            ],
+            );
+          }),
+        ),
+        const VerticalDivider(width: 1),
+        Expanded(
+          child: Center(
+            child: ConstrainedBox(
+              constraints: const BoxConstraints(maxWidth: 1200),
+              child: _buildScrollableFormContent(showTabs: false),
+            ),
           ),
         ),
-      ),
+      ],
     );
   }
 
   @override
   Widget build(BuildContext context) {
+    final isWideLayout = MediaQuery.of(context).size.width >= 900;
+
     return Scaffold(
       appBar: AppBar(title: const Text('Protocolo ADL')),
-      bottomNavigationBar: _buildBottomActionBar(),
       body: SafeArea(
         child: Form(
           key: _formKey,
-          child: Center(
-            child: ConstrainedBox(
-              constraints: const BoxConstraints(maxWidth: 1200),
-              child: SingleChildScrollView(
-                controller: _scrollController,
-                padding: const EdgeInsets.fromLTRB(16, 16, 16, 22),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.stretch,
-                  children: [
-                    _buildHeader(),
-                    const SizedBox(height: 16),
-                    _buildGroupView(),
-                  ],
+          child: isWideLayout
+              ? _buildWideLayout()
+              : Center(
+                  child: ConstrainedBox(
+                    constraints: const BoxConstraints(maxWidth: 1200),
+                    child: _buildScrollableFormContent(showTabs: true),
+                  ),
                 ),
-              ),
-            ),
-          ),
         ),
       ),
     );
