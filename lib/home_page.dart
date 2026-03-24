@@ -280,6 +280,17 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
                     ),
                   ),
                 ),
+                const SizedBox(height: 6),
+                Align(
+                  alignment: Alignment.centerRight,
+                  child: Opacity(
+                    opacity: 0.75,
+                    child: Text(
+                      'v1.0.0',
+                      style: Theme.of(context).textTheme.labelSmall,
+                    ),
+                  ),
+                ),
                 const SizedBox(height: 24),
                 Wrap(
                   spacing: 24,
