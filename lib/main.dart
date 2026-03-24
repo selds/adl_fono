@@ -74,42 +74,6 @@ class _MainAppState extends State<MainApp> {
         useMaterial3: true,
       ),
       themeMode: _themeMode,
-      builder: (context, child) {
-        if (child == null) return const SizedBox.shrink();
-        final colorScheme = Theme.of(context).colorScheme;
-        return Stack(
-          children: [
-            child,
-            Positioned(
-              right: 10,
-              bottom: 8,
-              child: IgnorePointer(
-                ignoring: true,
-                child: DecoratedBox(
-                  decoration: BoxDecoration(
-                    color: colorScheme.surface.withValues(alpha: 0.65),
-                    borderRadius: BorderRadius.circular(8),
-                  ),
-                  child: Padding(
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: 8,
-                      vertical: 4,
-                    ),
-                    child: Text(
-                      'v1.0.0',
-                      style: TextStyle(
-                        fontSize: 11,
-                        color: colorScheme.onSurfaceVariant,
-                        fontWeight: FontWeight.w500,
-                      ),
-                    ),
-                  ),
-                ),
-              ),
-            ),
-          ],
-        );
-      },
       initialRoute: '/login',
       routes: {
         '/login': (_) => const LoginScreen(),
