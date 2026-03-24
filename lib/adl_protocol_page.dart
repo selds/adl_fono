@@ -18,6 +18,8 @@ class _AdlProtocolPageState extends State<AdlProtocolPage> {
   final _scrollController = ScrollController();
   late final List<_AdlAgeGroup> _groups;
   late String _nomeCrianca;
+  bool _showFab = true;
+  double _lastScrollOffset = 0;
 
   final Map<String, bool?> _answers = <String, bool?>{};
   final Map<String, TextEditingController> _notesControllers =
@@ -31,6 +33,7 @@ class _AdlProtocolPageState extends State<AdlProtocolPage> {
     _groups = _buildComprehensiveGroups();
     _loadExistingAnswers();
     _loadPacienteName();
+    _scrollController.addListener(_handleFabVisibilityOnScroll);
   }
 
   void _loadPacienteName() {
@@ -63,11 +66,33 @@ class _AdlProtocolPageState extends State<AdlProtocolPage> {
 
   @override
   void dispose() {
+    _scrollController.removeListener(_handleFabVisibilityOnScroll);
     _scrollController.dispose();
     for (final controller in _notesControllers.values) {
       controller.dispose();
     }
     super.dispose();
+  }
+
+  void _handleFabVisibilityOnScroll() {
+    if (!_scrollController.hasClients) return;
+
+    final currentOffset = _scrollController.offset;
+    final delta = currentOffset - _lastScrollOffset;
+
+    if (currentOffset <= 4) {
+      if (!_showFab) setState(() => _showFab = true);
+      _lastScrollOffset = currentOffset;
+      return;
+    }
+
+    if (delta > 8 && _showFab) {
+      setState(() => _showFab = false);
+    } else if (delta < -8 && !_showFab) {
+      setState(() => _showFab = true);
+    }
+
+    _lastScrollOffset = currentOffset;
   }
 
   String _answerKey(int questionId, String itemId) =>
@@ -324,7 +349,7 @@ class _AdlProtocolPageState extends State<AdlProtocolPage> {
                 const SizedBox(width: 12),
                 Expanded(
                   child: Text(
-                    '${question.id}. ${question.title}',
+                    question.title,
                     style: TextStyle(
                       fontSize: 14,
                       fontWeight: FontWeight.w700,
@@ -687,15 +712,26 @@ class _AdlProtocolPageState extends State<AdlProtocolPage> {
       spacing: 8,
       runSpacing: 8,
       children: [
-        OutlinedButton.icon(
-          onPressed: _onSaveDraft,
-          icon: const Icon(Icons.save_outlined),
-          label: const Text('Salvar'),
+        SizedBox(
+          height: 40,
+          child: OutlinedButton.icon(
+            onPressed: _onSaveDraft,
+            icon: const Icon(Icons.save_outlined, size: 18),
+            label: const Text('Salvar'),
+            style: OutlinedButton.styleFrom(minimumSize: const Size(120, 40)),
+          ),
         ),
-        ElevatedButton.icon(
-          onPressed: isLast ? _onFinishComprehensive : _goNextGroup,
-          icon: Icon(isLast ? Icons.check_circle_outline : Icons.navigate_next),
-          label: Text(isLast ? 'Concluir' : 'Avancar'),
+        SizedBox(
+          height: 40,
+          child: ElevatedButton.icon(
+            onPressed: isLast ? _onFinishComprehensive : _goNextGroup,
+            icon: Icon(
+              isLast ? Icons.check_circle_outline : Icons.navigate_next,
+              size: 18,
+            ),
+            label: Text(isLast ? 'Concluir' : 'Avancar'),
+            style: ElevatedButton.styleFrom(minimumSize: const Size(120, 40)),
+          ),
         ),
       ],
     );
@@ -827,12 +863,30 @@ class _AdlProtocolPageState extends State<AdlProtocolPage> {
 
   @override
   Widget build(BuildContext context) {
+    final colorScheme = Theme.of(context).colorScheme;
+
     return Scaffold(
       appBar: AppBar(title: const Text('Protocolo ADL')),
-      floatingActionButton: FloatingActionButton(
-        onPressed: _openQuickActionsMenu,
-        tooltip: 'Acoes',
-        child: const Icon(Icons.more_vert),
+      floatingActionButton: AnimatedSlide(
+        offset: _showFab ? Offset.zero : const Offset(0, 2.2),
+        duration: const Duration(milliseconds: 180),
+        curve: Curves.easeOut,
+        child: AnimatedOpacity(
+          opacity: _showFab ? 1 : 0,
+          duration: const Duration(milliseconds: 180),
+          curve: Curves.easeOut,
+          child: FloatingActionButton(
+            onPressed: _openQuickActionsMenu,
+            mini: true,
+            tooltip: '',
+            elevation: 0,
+            backgroundColor: colorScheme.surfaceContainerHighest.withValues(
+              alpha: 0.78,
+            ),
+            foregroundColor: colorScheme.onSurfaceVariant,
+            child: const Icon(Icons.tune, size: 17),
+          ),
+        ),
       ),
       floatingActionButtonLocation: FloatingActionButtonLocation.endFloat,
       body: SafeArea(
