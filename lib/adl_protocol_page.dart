@@ -251,54 +251,29 @@ class _AdlProtocolPageState extends State<AdlProtocolPage> {
   Widget _buildScoreChip(_AdlQuestion question) {
     final score = _questionScore(question);
     final colorScheme = Theme.of(context).colorScheme;
-    return Chip(
-      backgroundColor: score == 1
-          ? colorScheme.primaryContainer
-          : colorScheme.surfaceContainerHighest,
-      side: BorderSide(color: colorScheme.outlineVariant),
-      label: Text(
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+      decoration: BoxDecoration(
+        color: score == 1
+            ? colorScheme.primaryContainer
+            : const Color.fromARGB(255, 245, 245, 245),
+        border: Border.all(
+          color: score == 1
+              ? colorScheme.primary
+              : const Color.fromARGB(255, 200, 200, 200),
+        ),
+        borderRadius: BorderRadius.circular(16),
+      ),
+      child: Text(
         '$score/1',
         style: TextStyle(
           fontWeight: FontWeight.w700,
+          fontSize: 11,
           color: score == 1
               ? colorScheme.onPrimaryContainer
-              : colorScheme.onSurfaceVariant,
+              : const Color.fromARGB(255, 100, 100, 100),
         ),
       ),
-    );
-  }
-
-  Widget _buildYesNoControl({
-    required bool? value,
-    required ValueChanged<bool?> onChanged,
-  }) {
-    final colorScheme = Theme.of(context).colorScheme;
-    return Row(
-      mainAxisSize: MainAxisSize.min,
-      children: [
-        Row(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Checkbox(
-              value: value == true,
-              side: BorderSide(color: colorScheme.outline),
-              onChanged: (_) => onChanged(value == true ? null : true),
-            ),
-            Text('Sim', style: TextStyle(color: colorScheme.onSurface)),
-          ],
-        ),
-        Row(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Checkbox(
-              value: value == false,
-              side: BorderSide(color: colorScheme.outline),
-              onChanged: (_) => onChanged(value == false ? null : false),
-            ),
-            Text('Nao', style: TextStyle(color: colorScheme.onSurface)),
-          ],
-        ),
-      ],
     );
   }
 
@@ -308,23 +283,44 @@ class _AdlProtocolPageState extends State<AdlProtocolPage> {
     final colorScheme = Theme.of(context).colorScheme;
 
     return Card(
-      margin: const EdgeInsets.only(bottom: 14),
-      color: colorScheme.surfaceContainerLow,
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
+      margin: const EdgeInsets.only(bottom: 12),
+      color: Colors.white,
+      elevation: 1,
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
       child: Padding(
         padding: const EdgeInsets.all(14),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
+            // Header: Número, Título, Badge
             Row(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
+                Container(
+                  width: 28,
+                  height: 28,
+                  decoration: BoxDecoration(
+                    color: colorScheme.primary,
+                    shape: BoxShape.circle,
+                  ),
+                  child: Center(
+                    child: Text(
+                      '${question.id}',
+                      style: TextStyle(
+                        color: colorScheme.onPrimary,
+                        fontWeight: FontWeight.w600,
+                        fontSize: 12,
+                      ),
+                    ),
+                  ),
+                ),
+                const SizedBox(width: 12),
                 Expanded(
                   child: Text(
-                    '${question.id}. ${question.title}',
+                    question.title,
                     style: TextStyle(
-                      fontSize: 16,
-                      fontWeight: FontWeight.w700,
+                      fontSize: 13,
+                      fontWeight: FontWeight.w600,
                       color: colorScheme.onSurface,
                     ),
                   ),
@@ -333,73 +329,121 @@ class _AdlProtocolPageState extends State<AdlProtocolPage> {
                 _buildScoreChip(question),
               ],
             ),
-            const SizedBox(height: 8),
-            Text(
-              'Material: ${question.material}',
-              style: TextStyle(
-                fontSize: 13,
-                color: colorScheme.onSurfaceVariant,
-              ),
-            ),
-            const SizedBox(height: 6),
-            Text(
-              'Procedimento: ${question.procedure}',
-              style: TextStyle(
-                fontSize: 13,
-                color: colorScheme.onSurfaceVariant,
-              ),
-            ),
             const SizedBox(height: 12),
+
+            // Material e Procedimento
+            Container(
+              padding: const EdgeInsets.all(8),
+              decoration: BoxDecoration(
+                color: const Color.fromARGB(255, 249, 249, 249),
+                borderRadius: BorderRadius.circular(6),
+              ),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  RichText(
+                    text: TextSpan(
+                      children: [
+                        TextSpan(
+                          text: 'Material: ',
+                          style: TextStyle(
+                            fontSize: 11,
+                            fontWeight: FontWeight.w600,
+                            color: colorScheme.onSurface,
+                          ),
+                        ),
+                        TextSpan(
+                          text: question.material,
+                          style: TextStyle(
+                            fontSize: 11,
+                            color: const Color.fromARGB(255, 102, 102, 102),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                  const SizedBox(height: 4),
+                  RichText(
+                    text: TextSpan(
+                      children: [
+                        TextSpan(
+                          text: 'Procedimento: ',
+                          style: TextStyle(
+                            fontSize: 11,
+                            fontWeight: FontWeight.w600,
+                            color: colorScheme.onSurface,
+                          ),
+                        ),
+                        TextSpan(
+                          text: question.procedure,
+                          style: TextStyle(
+                            fontSize: 11,
+                            color: const Color.fromARGB(255, 102, 102, 102),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            const SizedBox(height: 10),
+
+            // Items com checkboxes
             ...question.items.map((item) {
               final answerKey = _answerKey(question.id, item.id);
               final value = _answers[answerKey];
-              return Container(
-                margin: const EdgeInsets.only(bottom: 8),
-                padding: const EdgeInsets.all(10),
-                decoration: BoxDecoration(
-                  color: colorScheme.surfaceContainerHighest,
-                  borderRadius: BorderRadius.circular(10),
-                  border: Border.all(color: colorScheme.outlineVariant),
-                ),
+              return Padding(
+                padding: const EdgeInsets.only(bottom: 8),
                 child: Row(
-                  crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Expanded(
-                      child: Text(
-                        '(${item.id}) ${item.label}',
-                        style: TextStyle(color: colorScheme.onSurface),
+                    SizedBox(
+                      width: 20,
+                      height: 20,
+                      child: Checkbox(
+                        value: value == true,
+                        onChanged: (_) {
+                          setState(() {
+                            _answers[answerKey] = _answers[answerKey] == true
+                                ? null
+                                : true;
+                          });
+                        },
                       ),
                     ),
                     const SizedBox(width: 12),
-                    _buildYesNoControl(
-                      value: value,
-                      onChanged: (newValue) {
-                        setState(() {
-                          _answers[answerKey] = newValue;
-                        });
-                      },
+                    Expanded(
+                      child: Text(
+                        item.label,
+                        style: TextStyle(
+                          fontSize: 12,
+                          color: colorScheme.onSurface,
+                        ),
+                      ),
                     ),
                   ],
                 ),
               );
             }),
-            const SizedBox(height: 4),
+            const SizedBox(height: 10),
+
+            // Observações
             TextFormField(
               controller: noteController,
               minLines: 2,
-              maxLines: 4,
-              decoration: const InputDecoration(
-                labelText: 'Observacoes da questao (opcional)',
-                border: OutlineInputBorder(),
+              maxLines: 3,
+              decoration: InputDecoration(
+                labelText: 'Observações (opcional)',
+                labelStyle: const TextStyle(fontSize: 12),
+                border: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(6),
+                ),
+                contentPadding: const EdgeInsets.symmetric(
+                  horizontal: 12,
+                  vertical: 10,
+                ),
               ),
-            ),
-            const SizedBox(height: 8),
-            Text(
-              'Regra de pontuacao: ${question.scoreRule}',
-              style: TextStyle(
-                fontWeight: FontWeight.w600,
-                color: colorScheme.onSurfaceVariant,
-              ),
+              style: const TextStyle(fontSize: 12),
             ),
           ],
         ),
@@ -411,42 +455,68 @@ class _AdlProtocolPageState extends State<AdlProtocolPage> {
     final group = _groups[_selectedGroupIndex];
     final colorScheme = Theme.of(context).colorScheme;
 
-    return Container(
-      decoration: BoxDecoration(
-        color: colorScheme.surfaceContainerLow,
-        borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: colorScheme.outlineVariant),
-      ),
-      padding: const EdgeInsets.all(16),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Text(
-            'LINGUAGEM COMPREENSIVA',
-            style: TextStyle(
-              color: colorScheme.primary,
-              fontWeight: FontWeight.w700,
-              letterSpacing: 0.2,
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        // Header da faixa
+        Container(
+          padding: const EdgeInsets.all(16),
+          decoration: BoxDecoration(
+            gradient: LinearGradient(
+              colors: [colorScheme.primary, colorScheme.primaryContainer],
+              begin: Alignment.topLeft,
+              end: Alignment.bottomRight,
             ),
+            borderRadius: BorderRadius.circular(12),
           ),
-          const SizedBox(height: 8),
-          Text(
-            group.label,
-            style: TextStyle(
-              fontSize: 21,
-              fontWeight: FontWeight.bold,
-              color: colorScheme.onSurface,
-            ),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                'Linguagem Compreensiva',
+                style: TextStyle(
+                  fontSize: 14,
+                  fontWeight: FontWeight.w600,
+                  color: colorScheme.onPrimary,
+                  letterSpacing: 0.5,
+                ),
+              ),
+              const SizedBox(height: 12),
+              Text(
+                group.label,
+                style: TextStyle(
+                  fontSize: 18,
+                  fontWeight: FontWeight.bold,
+                  color: colorScheme.onPrimary,
+                ),
+              ),
+              const SizedBox(height: 8),
+              Container(
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 12,
+                  vertical: 6,
+                ),
+                decoration: BoxDecoration(
+                  color: Colors.white.withValues(alpha: 0.2),
+                  borderRadius: BorderRadius.circular(20),
+                ),
+                child: Text(
+                  'Pontuação: ${_groupScore(group)}/${group.questions.length}',
+                  style: TextStyle(
+                    fontSize: 12,
+                    fontWeight: FontWeight.w600,
+                    color: colorScheme.onPrimary,
+                  ),
+                ),
+              ),
+            ],
           ),
-          const SizedBox(height: 8),
-          Text(
-            'Pontuacao desta faixa: ${_groupScore(group)}/${group.questions.length}',
-            style: TextStyle(color: colorScheme.onSurfaceVariant),
-          ),
-          const SizedBox(height: 16),
-          ...group.questions.map(_buildQuestionCard),
-        ],
-      ),
+        ),
+        const SizedBox(height: 16),
+
+        // Perguntas
+        ...group.questions.map(_buildQuestionCard),
+      ],
     );
   }
 
@@ -455,44 +525,111 @@ class _AdlProtocolPageState extends State<AdlProtocolPage> {
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: colorScheme.surfaceContainerLow,
-        borderRadius: BorderRadius.circular(14),
-        border: Border.all(color: colorScheme.outlineVariant),
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(12),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withValues(alpha: 0.08),
+            blurRadius: 2,
+            offset: const Offset(0, 1),
+          ),
+        ],
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Text(
             widget.protocol == null
-                ? 'Protocolo ADL - Linguagem compreensiva'
-                : 'Editar ADL - Linguagem compreensiva',
+                ? 'Novo Protocolo ADL'
+                : 'Editar Protocolo ADL',
             style: TextStyle(
-              fontSize: 20,
+              fontSize: 18,
               fontWeight: FontWeight.bold,
               color: colorScheme.onSurface,
             ),
           ),
-          const SizedBox(height: 8),
+          const SizedBox(height: 12),
           Text(
-            'Responda uma faixa etaria por vez. Ao finalizar toda a linguagem compreensiva, voce podera seguir para a linguagem expressiva.',
-            style: TextStyle(color: colorScheme.onSurfaceVariant),
+            'Responda uma faixa etária por vez. Ao finalizar toda a linguagem compreensiva, você poderá seguir para a linguagem expressiva.',
+            style: TextStyle(
+              fontSize: 12,
+              color: const Color.fromARGB(255, 102, 102, 102),
+              height: 1.5,
+            ),
           ),
-          const SizedBox(height: 10),
-          Wrap(
-            spacing: 8,
-            runSpacing: 8,
+          const SizedBox(height: 14),
+          Row(
             children: [
-              Chip(
-                avatar: const Icon(Icons.calculate_outlined, size: 18),
-                label: Text(
-                  'Total: $_comprehensiveTotal/$_maxComprehensiveTotal',
+              Expanded(
+                child: Container(
+                  padding: const EdgeInsets.all(12),
+                  decoration: BoxDecoration(
+                    color: const Color.fromARGB(255, 232, 245, 233),
+                    borderRadius: BorderRadius.circular(8),
+                    border: Border.all(
+                      color: const Color.fromARGB(255, 200, 230, 201),
+                    ),
+                  ),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        'Total',
+                        style: TextStyle(
+                          fontSize: 11,
+                          color: const Color.fromARGB(255, 56, 142, 60),
+                          fontWeight: FontWeight.w600,
+                        ),
+                      ),
+                      const SizedBox(height: 4),
+                      Text(
+                        '$_comprehensiveTotal/$_maxComprehensiveTotal',
+                        style: TextStyle(
+                          fontSize: 18,
+                          fontWeight: FontWeight.bold,
+                          color: const Color.fromARGB(255, 27, 94, 32),
+                        ),
+                      ),
+                    ],
+                  ),
                 ),
-                side: BorderSide.none,
               ),
-              Chip(
-                avatar: const Icon(Icons.person_outline, size: 18),
-                label: Text('Paciente: $_nomeCrianca'),
-                side: BorderSide.none,
+              const SizedBox(width: 12),
+              Expanded(
+                child: Container(
+                  padding: const EdgeInsets.all(12),
+                  decoration: BoxDecoration(
+                    color: const Color.fromARGB(255, 243, 229, 245),
+                    borderRadius: BorderRadius.circular(8),
+                    border: Border.all(
+                      color: const Color.fromARGB(255, 225, 190, 231),
+                    ),
+                  ),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        'Paciente',
+                        style: TextStyle(
+                          fontSize: 11,
+                          color: const Color.fromARGB(255, 106, 27, 154),
+                          fontWeight: FontWeight.w600,
+                        ),
+                      ),
+                      const SizedBox(height: 4),
+                      Text(
+                        _nomeCrianca,
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        style: TextStyle(
+                          fontSize: 14,
+                          fontWeight: FontWeight.bold,
+                          color: const Color.fromARGB(255, 63, 81, 181),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
               ),
             ],
           ),
