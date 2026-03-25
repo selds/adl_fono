@@ -25,7 +25,15 @@ class _AdlProtocolPageState extends State<AdlProtocolPage> {
   final Map<String, TextEditingController> _notesControllers =
       <String, TextEditingController>{};
 
+  final TextEditingController _q1ExpText = TextEditingController();
+  final TextEditingController _q2ExpText = TextEditingController();
+  final TextEditingController _q3ExpText = TextEditingController();
+  bool? _q1ExpMet;
+  bool? _q2ExpMet;
+  bool? _q3ExpMet;
+
   int _selectedGroupIndex = 0;
+  _AdlSection _selectedSection = _AdlSection.compreensiva;
 
   LinearGradient _primaryGradientFor(Brightness brightness) {
     if (brightness == Brightness.dark) {
@@ -78,6 +86,8 @@ class _AdlProtocolPageState extends State<AdlProtocolPage> {
 
   void _loadExistingAnswers() {
     final receptive = widget.protocol?.receptiveAnswers ?? <String, dynamic>{};
+    final expressive =
+        widget.protocol?.expressiveAnswers ?? <String, dynamic>{};
 
     for (final group in _groups) {
       for (final question in group.questions) {
@@ -92,6 +102,13 @@ class _AdlProtocolPageState extends State<AdlProtocolPage> {
         _notesControllers[noteKey] = TextEditingController(text: noteValue);
       }
     }
+
+    _q1ExpText.text = expressive['q1Text'] as String? ?? '';
+    _q2ExpText.text = expressive['q2Text'] as String? ?? '';
+    _q3ExpText.text = expressive['q3Text'] as String? ?? '';
+    _q1ExpMet = expressive['q1Met'] as bool?;
+    _q2ExpMet = expressive['q2Met'] as bool?;
+    _q3ExpMet = expressive['q3Met'] as bool?;
   }
 
   @override
@@ -101,6 +118,9 @@ class _AdlProtocolPageState extends State<AdlProtocolPage> {
     for (final controller in _notesControllers.values) {
       controller.dispose();
     }
+    _q1ExpText.dispose();
+    _q2ExpText.dispose();
+    _q3ExpText.dispose();
     super.dispose();
   }
 
@@ -159,6 +179,11 @@ class _AdlProtocolPageState extends State<AdlProtocolPage> {
     );
   }
 
+  int get _expressivaTotal {
+    final items = [_q1ExpMet, _q2ExpMet, _q3ExpMet];
+    return items.where((v) => v == true).length;
+  }
+
   bool _isCurrentGroupCompleted(_AdlAgeGroup group) {
     for (final question in group.questions) {
       for (final item in question.items) {
@@ -215,7 +240,18 @@ class _AdlProtocolPageState extends State<AdlProtocolPage> {
     final protocol = AdlProtocol(
       pacienteId: widget.pacienteId,
       receptiveAnswers: receptiveAnswers,
-      expressiveAnswers: widget.protocol?.expressiveAnswers ?? {},
+      expressiveAnswers: {
+        ...Map<String, dynamic>.from(widget.protocol?.expressiveAnswers ?? {}),
+        'q1Met': _q1ExpMet,
+        'q2Met': _q2ExpMet,
+        'q3Met': _q3ExpMet,
+        'q1Text': _q1ExpText.text.trim(),
+        'q2Text': _q2ExpText.text.trim(),
+        'q3Text': _q3ExpText.text.trim(),
+        'q1Score': _q1ExpMet == true ? '1' : '0',
+        'q2Score': _q2ExpMet == true ? '1' : '0',
+        'q3Score': _q3ExpMet == true ? '1' : '0',
+      },
       id: widget.protocol?.id,
       createdAt: widget.protocol?.createdAt,
     );
@@ -697,7 +733,8 @@ class _AdlProtocolPageState extends State<AdlProtocolPage> {
                 child: Container(
                   padding: const EdgeInsets.all(12),
                   decoration: BoxDecoration(
-                    color: colorScheme.primaryContainer,
+                    color: colorScheme.surface,
+                    border: Border.all(color: colorScheme.outlineVariant),
                     borderRadius: BorderRadius.circular(8),
                   ),
                   child: Column(
@@ -707,17 +744,19 @@ class _AdlProtocolPageState extends State<AdlProtocolPage> {
                         'Total',
                         style: TextStyle(
                           fontSize: 11,
-                          color: colorScheme.onPrimaryContainer,
+                          color: colorScheme.onSurfaceVariant,
                           fontWeight: FontWeight.w600,
                         ),
                       ),
                       const SizedBox(height: 4),
                       Text(
-                        '$_comprehensiveTotal/$_maxComprehensiveTotal',
+                        _selectedSection == _AdlSection.compreensiva
+                            ? '$_comprehensiveTotal/$_maxComprehensiveTotal'
+                            : '$_expressivaTotal/3',
                         style: TextStyle(
                           fontSize: 18,
                           fontWeight: FontWeight.bold,
-                          color: colorScheme.onPrimaryContainer,
+                          color: colorScheme.onSurface,
                         ),
                       ),
                     ],
@@ -729,7 +768,8 @@ class _AdlProtocolPageState extends State<AdlProtocolPage> {
                 child: Container(
                   padding: const EdgeInsets.all(12),
                   decoration: BoxDecoration(
-                    color: colorScheme.secondaryContainer,
+                    color: colorScheme.surface,
+                    border: Border.all(color: colorScheme.outlineVariant),
                     borderRadius: BorderRadius.circular(8),
                   ),
                   child: Column(
@@ -739,7 +779,7 @@ class _AdlProtocolPageState extends State<AdlProtocolPage> {
                         'Paciente',
                         style: TextStyle(
                           fontSize: 11,
-                          color: colorScheme.onSecondaryContainer,
+                          color: colorScheme.onSurfaceVariant,
                           fontWeight: FontWeight.w600,
                         ),
                       ),
@@ -751,7 +791,7 @@ class _AdlProtocolPageState extends State<AdlProtocolPage> {
                         style: TextStyle(
                           fontSize: 14,
                           fontWeight: FontWeight.bold,
-                          color: colorScheme.onSecondaryContainer,
+                          color: colorScheme.onSurface,
                         ),
                       ),
                     ],
@@ -762,6 +802,143 @@ class _AdlProtocolPageState extends State<AdlProtocolPage> {
           ),
         ],
       ),
+    );
+  }
+
+  Widget _buildSectionSelector() {
+    final colorScheme = Theme.of(context).colorScheme;
+    return SegmentedButton<_AdlSection>(
+      segments: const [
+        ButtonSegment<_AdlSection>(
+          value: _AdlSection.compreensiva,
+          label: Text('2. Compreensiva'),
+          icon: Icon(Icons.hearing_outlined),
+        ),
+        ButtonSegment<_AdlSection>(
+          value: _AdlSection.expressiva,
+          label: Text('3. Expressiva'),
+          icon: Icon(Icons.record_voice_over_outlined),
+        ),
+      ],
+      selected: {_selectedSection},
+      style: ButtonStyle(
+        backgroundColor: WidgetStateProperty.resolveWith((states) {
+          if (states.contains(WidgetState.selected)) {
+            return colorScheme.primaryContainer;
+          }
+          return colorScheme.surface;
+        }),
+      ),
+      onSelectionChanged: (selection) {
+        setState(() => _selectedSection = selection.first);
+      },
+    );
+  }
+
+  Widget _buildBandPicker() {
+    return DropdownButtonFormField<int>(
+      value: _selectedGroupIndex,
+      decoration: InputDecoration(
+        labelText: 'Tela por faixa etária',
+        border: OutlineInputBorder(borderRadius: BorderRadius.circular(8)),
+        contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+      ),
+      items: List.generate(
+        _groups.length,
+        (index) => DropdownMenuItem<int>(
+          value: index,
+          child: Text('${index + 1}. ${_groups[index].label}'),
+        ),
+      ),
+      onChanged: (value) {
+        if (value == null) return;
+        setState(() => _selectedGroupIndex = value);
+        _scrollToTop();
+      },
+    );
+  }
+
+  Widget _buildExpressivaQuestion({
+    required String title,
+    required bool? value,
+    required ValueChanged<bool?> onChanged,
+    required TextEditingController notes,
+  }) {
+    final colorScheme = Theme.of(context).colorScheme;
+    return Card(
+      margin: const EdgeInsets.only(bottom: 12),
+      child: Padding(
+        padding: const EdgeInsets.all(12),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              title,
+              style: TextStyle(
+                fontWeight: FontWeight.w700,
+                color: colorScheme.onSurface,
+              ),
+            ),
+            const SizedBox(height: 8),
+            Wrap(
+              spacing: 10,
+              runSpacing: 6,
+              children: [
+                FilterChip(
+                  label: const Text('Critério atendido'),
+                  selected: value == true,
+                  onSelected: (_) => onChanged(value == true ? null : true),
+                ),
+                FilterChip(
+                  label: const Text('Não atendido'),
+                  selected: value == false,
+                  onSelected: (_) => onChanged(value == false ? null : false),
+                ),
+              ],
+            ),
+            const SizedBox(height: 8),
+            TextFormField(
+              controller: notes,
+              minLines: 2,
+              maxLines: 4,
+              decoration: InputDecoration(
+                labelText: 'Observações',
+                border: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(8),
+                ),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildExpressivaView() {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        _buildExpressivaQuestion(
+          title:
+              '1. Participa de brincadeiras com outra pessoa pelo período de 1 a 2 minutos.',
+          value: _q1ExpMet,
+          onChanged: (v) => setState(() => _q1ExpMet = v),
+          notes: _q1ExpText,
+        ),
+        _buildExpressivaQuestion(
+          title: '2. Comunica-se de forma gestual.',
+          value: _q2ExpMet,
+          onChanged: (v) => setState(() => _q2ExpMet = v),
+          notes: _q2ExpText,
+        ),
+        _buildExpressivaQuestion(
+          title:
+              '3. Vocaliza sem que movimentos de pernas e braços acompanhem a emissão dos sons.',
+          value: _q3ExpMet,
+          onChanged: (v) => setState(() => _q3ExpMet = v),
+          notes: _q3ExpText,
+        ),
+      ],
     );
   }
 
@@ -953,11 +1130,28 @@ class _AdlProtocolPageState extends State<AdlProtocolPage> {
         children: [
           _buildHeader(),
           const SizedBox(height: 16),
-          _buildActionButtons(),
+          _buildSectionSelector(),
           const SizedBox(height: 16),
-          _buildBandsProgressStrip(),
-          const SizedBox(height: 12),
-          _buildGroupView(),
+          if (_selectedSection == _AdlSection.compreensiva) ...[
+            _buildActionButtons(),
+            const SizedBox(height: 16),
+            _buildBandPicker(),
+            const SizedBox(height: 12),
+            _buildBandsProgressStrip(),
+            const SizedBox(height: 12),
+            _buildGroupView(),
+          ] else ...[
+            SizedBox(
+              height: 40,
+              child: OutlinedButton.icon(
+                onPressed: _onSaveDraft,
+                icon: const Icon(Icons.save_outlined, size: 18),
+                label: const Text('Salvar'),
+              ),
+            ),
+            const SizedBox(height: 12),
+            _buildExpressivaView(),
+          ],
         ],
       ),
     );
@@ -1925,3 +2119,5 @@ class _AdlQuestionItem {
   final String id;
   final String label;
 }
+
+enum _AdlSection { compreensiva, expressiva }
