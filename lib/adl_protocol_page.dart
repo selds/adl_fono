@@ -636,7 +636,10 @@ class _AdlProtocolPageState extends State<AdlProtocolPage> {
                   vertical: 6,
                 ),
                 decoration: BoxDecoration(
-                  color: Colors.white.withValues(alpha: 0.2),
+                  color: colorScheme.onPrimary.withValues(alpha: 0.18),
+                  border: Border.all(
+                    color: colorScheme.onPrimary.withValues(alpha: 0.35),
+                  ),
                   borderRadius: BorderRadius.circular(20),
                 ),
                 child: Text(
@@ -837,7 +840,7 @@ class _AdlProtocolPageState extends State<AdlProtocolPage> {
 
   Widget _buildBandPicker() {
     return DropdownButtonFormField<int>(
-      value: _selectedGroupIndex,
+      initialValue: _selectedGroupIndex,
       decoration: InputDecoration(
         labelText: 'Tela por faixa etária',
         border: OutlineInputBorder(borderRadius: BorderRadius.circular(8)),
