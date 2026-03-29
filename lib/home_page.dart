@@ -202,10 +202,10 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
       body: Center(
         child: ConstrainedBox(
           constraints: const BoxConstraints(maxWidth: 900),
-          child: Padding(
+          child: SingleChildScrollView(
             padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 24),
             child: Column(
-              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
                 // Painel do usuário logado
                 Card(
@@ -309,18 +309,17 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
                       label: 'Tabela dos Escores',
                       icon: Icons.table_chart,
                       color: const Color(0xFF43cea2),
-                      onTap:() => Navigator.of(context)
-                          .pushNamed('/scores')
-                          .then((_) => _refreshUserAccess()),
+                      onTap: () => Navigator.of(
+                        context,
+                      ).pushNamed('/scores').then((_) => _refreshUserAccess()),
                     ),
                     _ActionCard(
                       label: 'Gerar relatório',
                       icon: Icons.insert_drive_file,
                       color: const Color(0xFFff9966),
-                      onTap: () => Navigator.of(context)
-                          .pushNamed('/report')
-                          .then((_) => _refreshUserAccess()),
-
+                      onTap: () => Navigator.of(
+                        context,
+                      ).pushNamed('/report').then((_) => _refreshUserAccess()),
                     ),
                     _ActionCard(
                       label: 'Acessar histórico',
@@ -530,6 +529,21 @@ class _EditProfileDialogState extends State<_EditProfileDialog> {
                 ),
               ),
             ),
+            if (_photoController.text.trim().isNotEmpty) ...[
+              const SizedBox(height: 8),
+              SizedBox(
+                width: double.infinity,
+                child: OutlinedButton.icon(
+                  onPressed: () => setState(() => _photoController.text = ''),
+                  icon: const Icon(Icons.delete_outline),
+                  label: const Text('Remover foto de perfil'),
+                  style: OutlinedButton.styleFrom(
+                    foregroundColor: Colors.red,
+                    side: const BorderSide(color: Colors.red),
+                  ),
+                ),
+              ),
+            ],
             const SizedBox(height: 8),
             Text(
               'Tipos aceitos: JPG, JPEG, PNG, WEBP. Tamanho máximo: 5 MB por upload.',
