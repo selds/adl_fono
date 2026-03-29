@@ -13,51 +13,27 @@ class HistoryPage extends StatefulWidget {
 class _HistoryPageState extends State<HistoryPage> {
   String _searchQuery = '';
 
-  String _simNaoLabel(bool? value) {
-    if (value == true) return 'Sim';
-    if (value == false) return 'Não';
-    return 'Não informado';
-  }
-
-  String _resumoTexto(String? value) {
-    final text = (value ?? '').trim();
-    if (text.isEmpty) return 'Sem observação';
-    if (text.length <= 90) return text;
-    return '${text.substring(0, 90)}...';
-  }
-
   Widget _buildProtocolSummary(AdlProtocol protocol) {
     final colorScheme = Theme.of(context).colorScheme;
     final r = protocol.receptiveAnswers;
     final e = protocol.expressiveAnswers;
 
-    final compreensivaVisual = ((r['q5Score'] as String?)?.trim() ?? '') == '1'
-        ? '1'
-        : '0';
-    final compreensivaAuditiva =
-        ((r['q6Score'] as String?)?.trim() ?? '') == '1' ? '1' : '0';
-    final expressiva1 = ((e['q1Score'] as String?)?.trim() ?? '') == '1'
-        ? '1'
-        : '0';
-    final expressiva2 = ((e['q2Score'] as String?)?.trim() ?? '') == '1'
-        ? '1'
-        : '0';
-    final expressiva3 = ((e['q3Score'] as String?)?.trim() ?? '') == '1'
-        ? '1'
-        : '0';
+    final lrBruto = r['lcRawScore'] as int?;
+    final lrPadrao = (r['lcStandardScore'] as String?)?.trim();
+    final leBruto = e['leRawScore'] as int?;
+    final lePadrao = (e['leStandardScore'] as String?)?.trim();
+    final lgBruto = r['lgRawScore'] as int?;
+    final lgPadrao = (r['lgStandardScore'] as String?)?.trim();
 
-    final q5a = _simNaoLabel(r['q5a'] as bool?);
-    final q5b = _simNaoLabel(r['q5b'] as bool?);
-    final q6a = _simNaoLabel(r['q6a'] as bool?);
-    final q6b = _simNaoLabel(r['q6b'] as bool?);
-
-    final q1Met = _simNaoLabel(e['q1Met'] as bool?);
-    final q2Met = _simNaoLabel(e['q2Met'] as bool?);
-    final q3Met = _simNaoLabel(e['q3Met'] as bool?);
+    String scoreText(int? bruto, String? padrao) {
+      final b = bruto != null ? '$bruto' : '—';
+      final p = (padrao != null && padrao.isNotEmpty) ? padrao : '—';
+      return 'Bruto: $b  |  Padronizado: $p';
+    }
 
     return Container(
       margin: const EdgeInsets.only(top: 8),
-      padding: const EdgeInsets.all(10),
+      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
       decoration: BoxDecoration(
         color: colorScheme.surfaceContainerHighest,
         borderRadius: BorderRadius.circular(8),
@@ -67,56 +43,30 @@ class _HistoryPageState extends State<HistoryPage> {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Text(
-            'Compreensiva: Atenção visual $compreensivaVisual | Atenção auditiva $compreensivaAuditiva',
+            'Cálculo dos Escores',
             style: TextStyle(
-              fontWeight: FontWeight.w600,
+              fontWeight: FontWeight.w700,
               fontSize: 12,
-              color: colorScheme.onSurface,
+              color: colorScheme.primary,
             ),
           ),
-          const SizedBox(height: 2),
-          Text(
-            'Visual: a) $q5a • b) $q5b',
-            style: TextStyle(fontSize: 12, color: colorScheme.onSurface),
-          ),
-          Text(
-            'Auditiva: a) $q6a • b) $q6b',
-            style: TextStyle(fontSize: 12, color: colorScheme.onSurface),
-          ),
           const SizedBox(height: 6),
-          Text(
-            'Expressiva: Q1 $expressiva1 | Q2 $expressiva2 | Q3 $expressiva3',
-            style: TextStyle(
-              fontWeight: FontWeight.w600,
-              fontSize: 12,
-              color: colorScheme.onSurface,
-            ),
+          _ScoreRow(
+            label: 'LR (Compreensiva)',
+            value: scoreText(lrBruto, lrPadrao),
+            colorScheme: colorScheme,
           ),
           const SizedBox(height: 2),
-          Text(
-            'Q1 atende: $q1Met',
-            style: TextStyle(fontSize: 12, color: colorScheme.onSurface),
+          _ScoreRow(
+            label: 'LE (Expressiva)',
+            value: scoreText(leBruto, lePadrao),
+            colorScheme: colorScheme,
           ),
-          Text(
-            'Q2 atende: $q2Met',
-            style: TextStyle(fontSize: 12, color: colorScheme.onSurface),
-          ),
-          Text(
-            'Q3 atende: $q3Met',
-            style: TextStyle(fontSize: 12, color: colorScheme.onSurface),
-          ),
-          const SizedBox(height: 6),
-          Text(
-            'Obs Q1: ${_resumoTexto(e['q1Text'] as String?)}',
-            style: TextStyle(fontSize: 12, color: colorScheme.onSurface),
-          ),
-          Text(
-            'Obs Q2: ${_resumoTexto(e['q2Text'] as String?)}',
-            style: TextStyle(fontSize: 12, color: colorScheme.onSurface),
-          ),
-          Text(
-            'Obs Q3: ${_resumoTexto(e['q3Text'] as String?)}',
-            style: TextStyle(fontSize: 12, color: colorScheme.onSurface),
+          const SizedBox(height: 2),
+          _ScoreRow(
+            label: 'LG (Total)',
+            value: scoreText(lgBruto, lgPadrao),
+            colorScheme: colorScheme,
           ),
         ],
       ),
@@ -472,6 +422,41 @@ class _HistoryPageState extends State<HistoryPage> {
                 ),
               ],
             ),
+    );
+  }
+}
+
+class _ScoreRow extends StatelessWidget {
+  const _ScoreRow({
+    required this.label,
+    required this.value,
+    required this.colorScheme,
+  });
+
+  final String label;
+  final String value;
+  final ColorScheme colorScheme;
+
+  @override
+  Widget build(BuildContext context) {
+    return Row(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          '$label: ',
+          style: TextStyle(
+            fontSize: 12,
+            fontWeight: FontWeight.w600,
+            color: colorScheme.onSurfaceVariant,
+          ),
+        ),
+        Expanded(
+          child: Text(
+            value,
+            style: TextStyle(fontSize: 12, color: colorScheme.onSurface),
+          ),
+        ),
+      ],
     );
   }
 }
