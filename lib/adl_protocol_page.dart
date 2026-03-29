@@ -85,7 +85,8 @@ class _AdlProtocolPageState extends State<AdlProtocolPage> {
 
   void _loadExistingAnswers() {
     final receptive = widget.protocol?.receptiveAnswers ?? <String, dynamic>{};
-    final expressive = widget.protocol?.expressiveAnswers ?? <String, dynamic>{};
+    final expressive =
+        widget.protocol?.expressiveAnswers ?? <String, dynamic>{};
 
     for (final group in _groups) {
       for (final question in group.questions) {
@@ -1325,7 +1326,8 @@ class _AdlProtocolPageState extends State<AdlProtocolPage> {
                         : _expressiveGroups.length,
                     separatorBuilder: (_, _) => const Divider(height: 1),
                     itemBuilder: (context, index) {
-                      final groups = _selectedSection == _AdlSection.compreensiva
+                      final groups =
+                          _selectedSection == _AdlSection.compreensiva
                           ? _groups
                           : _expressiveGroups;
                       final group = groups[index];
@@ -2420,8 +2422,7 @@ class _AdlProtocolPageState extends State<AdlProtocolPage> {
             material: 'Brinquedos.',
             procedure:
                 'Evocar e observar repetição espontânea/imitada de fonemas alvo.',
-            scoreRule:
-                '1 ponto quando emite quatro fonemas diferentes.',
+            scoreRule: '1 ponto quando emite quatro fonemas diferentes.',
           ),
         ],
       ),
@@ -2444,8 +2445,7 @@ class _AdlProtocolPageState extends State<AdlProtocolPage> {
             material: 'Brinquedos.',
             procedure:
                 'Falar palavra familiar e observar imitação durante avaliação.',
-            scoreRule:
-                '1 ponto quando imita ao menos uma palavra.',
+            scoreRule: '1 ponto quando imita ao menos uma palavra.',
           ),
           q(
             id: 10,
@@ -2555,8 +2555,7 @@ class _AdlProtocolPageState extends State<AdlProtocolPage> {
           ),
           q(
             id: 21,
-            title:
-                'Responde questões com o que, onde e negação não.',
+            title: 'Responde questões com o que, onde e negação não.',
             material: 'Manual de Figuras, página 7.',
             procedure: 'Fazer perguntas dirigidas sobre cena e estado.',
             scoreRule: '1 ponto com 2 respostas corretas.',
@@ -2601,7 +2600,8 @@ class _AdlProtocolPageState extends State<AdlProtocolPage> {
             title:
                 'Soluciona e responde questões sobre situações do cotidiano.',
             material: 'Não necessário.',
-            procedure: 'Perguntar o que faz quando está com sono, mãos sujas e fome.',
+            procedure:
+                'Perguntar o que faz quando está com sono, mãos sujas e fome.',
             scoreRule: '1 ponto com 3 respostas corretas.',
           ),
           q(
@@ -2621,8 +2621,10 @@ class _AdlProtocolPageState extends State<AdlProtocolPage> {
             id: 28,
             title: 'Responde perguntas sobre atividades na escola.',
             material: 'Não necessário.',
-            procedure: 'Fazer perguntas sobre escola, preferência e justificativa.',
-            scoreRule: '1 ponto quando responde 3 ou mais questões corretamente.',
+            procedure:
+                'Fazer perguntas sobre escola, preferência e justificativa.',
+            scoreRule:
+                '1 ponto quando responde 3 ou mais questões corretamente.',
           ),
           q(
             id: 29,
@@ -2683,8 +2685,7 @@ class _AdlProtocolPageState extends State<AdlProtocolPage> {
             id: 36,
             title: 'Expressa quantidade.',
             material: 'Manual de Figuras, página 19.',
-            procedure:
-                'Comparar muito/pouco e pouca/muita em duas sequências.',
+            procedure: 'Comparar muito/pouco e pouca/muita em duas sequências.',
             scoreRule: '1 ponto com 2 respostas corretas.',
           ),
           q(
@@ -2698,7 +2699,8 @@ class _AdlProtocolPageState extends State<AdlProtocolPage> {
             id: 38,
             title: 'Categorização de nomes.',
             material: 'Não necessário.',
-            procedure: 'Solicitar categoria para listas de animais e alimentos.',
+            procedure:
+                'Solicitar categoria para listas de animais e alimentos.',
             scoreRule: '1 ponto com 2 respostas corretas.',
           ),
         ],
@@ -2724,8 +2726,7 @@ class _AdlProtocolPageState extends State<AdlProtocolPage> {
             id: 41,
             title: 'Compreende e descreve similaridade entre objetos.',
             material: 'Manual de Figuras, páginas 21 e 22.',
-            procedure:
-                'Perguntar semelhanças em três pares de figuras.',
+            procedure: 'Perguntar semelhanças em três pares de figuras.',
             scoreRule: '1 ponto com 3 respostas corretas.',
           ),
           q(
@@ -2765,11 +2766,9 @@ class _AdlProtocolPageState extends State<AdlProtocolPage> {
           ),
           q(
             id: 46,
-            title:
-                'Busca palavras em categoria semântica em tempo limitado.',
+            title: 'Busca palavras em categoria semântica em tempo limitado.',
             material: 'Cronômetro.',
-            procedure:
-                'Pedir nomes de comidas e animais em até 60 segundos.',
+            procedure: 'Pedir nomes de comidas e animais em até 60 segundos.',
             scoreRule: '1 ponto quando nomeia seis itens em uma categoria.',
           ),
           q(
@@ -2777,7 +2776,8 @@ class _AdlProtocolPageState extends State<AdlProtocolPage> {
             title: 'Produz uma história diante de uma figura.',
             material: 'Manual de Figuras, página 27.',
             procedure: 'Solicitar narrativa sobre o que aconteceu na cena.',
-            scoreRule: '1 ponto quando elabora história semanticamente adequada.',
+            scoreRule:
+                '1 ponto quando elabora história semanticamente adequada.',
           ),
           q(
             id: 48,
@@ -2814,7 +2814,8 @@ class _AdlProtocolPageState extends State<AdlProtocolPage> {
             material: 'Manual de Figuras, página 30.',
             procedure:
                 'Narrar história e solicitar repetição literal das sentenças-alvo.',
-            scoreRule: '1 ponto quando repete sentenças conforme critério clínico.',
+            scoreRule:
+                '1 ponto quando repete sentenças conforme critério clínico.',
           ),
           q(
             id: 52,
@@ -2842,8 +2843,7 @@ class _AdlProtocolPageState extends State<AdlProtocolPage> {
             id: 54,
             title: 'Relembra e descreve rotina diária em etapas.',
             material: 'Não necessário.',
-            procedure:
-                'Solicitar etapas para escovar os dentes e tomar banho.',
+            procedure: 'Solicitar etapas para escovar os dentes e tomar banho.',
             scoreRule: '1 ponto quando descreve 3 etapas em sequência.',
           ),
           q(
