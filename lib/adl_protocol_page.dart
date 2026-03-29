@@ -17,6 +17,7 @@ class _AdlProtocolPageState extends State<AdlProtocolPage> {
   final _formKey = GlobalKey<FormState>();
   final _scrollController = ScrollController();
   late final List<_AdlAgeGroup> _groups;
+  late final List<_AdlAgeGroup> _expressiveGroups;
   late String _nomeCrianca;
   bool _showFab = true;
   double _lastScrollOffset = 0;
@@ -24,15 +25,12 @@ class _AdlProtocolPageState extends State<AdlProtocolPage> {
   final Map<String, bool?> _answers = <String, bool?>{};
   final Map<String, TextEditingController> _notesControllers =
       <String, TextEditingController>{};
-
-  final TextEditingController _q1ExpText = TextEditingController();
-  final TextEditingController _q2ExpText = TextEditingController();
-  final TextEditingController _q3ExpText = TextEditingController();
-  bool? _q1ExpMet;
-  bool? _q2ExpMet;
-  bool? _q3ExpMet;
+  final Map<String, bool?> _expressiveAnswers = <String, bool?>{};
+  final Map<String, TextEditingController> _expressiveNotesControllers =
+      <String, TextEditingController>{};
 
   int _selectedGroupIndex = 0;
+  int _selectedExpressiveGroupIndex = 0;
   _AdlSection _selectedSection = _AdlSection.compreensiva;
 
   LinearGradient _primaryGradientFor(Brightness brightness) {
@@ -69,6 +67,7 @@ class _AdlProtocolPageState extends State<AdlProtocolPage> {
   void initState() {
     super.initState();
     _groups = _buildComprehensiveGroups();
+    _expressiveGroups = _buildExpressiveGroups();
     _loadExistingAnswers();
     _loadPacienteName();
     _scrollController.addListener(_handleFabVisibilityOnScroll);
@@ -86,8 +85,7 @@ class _AdlProtocolPageState extends State<AdlProtocolPage> {
 
   void _loadExistingAnswers() {
     final receptive = widget.protocol?.receptiveAnswers ?? <String, dynamic>{};
-    final expressive =
-        widget.protocol?.expressiveAnswers ?? <String, dynamic>{};
+    final expressive = widget.protocol?.expressiveAnswers ?? <String, dynamic>{};
 
     for (final group in _groups) {
       for (final question in group.questions) {
@@ -103,12 +101,21 @@ class _AdlProtocolPageState extends State<AdlProtocolPage> {
       }
     }
 
-    _q1ExpText.text = expressive['q1Text'] as String? ?? '';
-    _q2ExpText.text = expressive['q2Text'] as String? ?? '';
-    _q3ExpText.text = expressive['q3Text'] as String? ?? '';
-    _q1ExpMet = expressive['q1Met'] as bool?;
-    _q2ExpMet = expressive['q2Met'] as bool?;
-    _q3ExpMet = expressive['q3Met'] as bool?;
+    for (final group in _expressiveGroups) {
+      for (final question in group.questions) {
+        for (final item in question.items) {
+          final key = _expAnswerKey(question.id, item.id);
+          final value = expressive[key];
+          _expressiveAnswers[key] = value is bool ? value : null;
+        }
+
+        final noteKey = _expNoteKey(question.id);
+        final noteValue = expressive[noteKey] as String? ?? '';
+        _expressiveNotesControllers[noteKey] = TextEditingController(
+          text: noteValue,
+        );
+      }
+    }
   }
 
   @override
@@ -118,9 +125,9 @@ class _AdlProtocolPageState extends State<AdlProtocolPage> {
     for (final controller in _notesControllers.values) {
       controller.dispose();
     }
-    _q1ExpText.dispose();
-    _q2ExpText.dispose();
-    _q3ExpText.dispose();
+    for (final controller in _expressiveNotesControllers.values) {
+      controller.dispose();
+    }
     super.dispose();
   }
 
@@ -150,6 +157,11 @@ class _AdlProtocolPageState extends State<AdlProtocolPage> {
 
   String _noteKey(int questionId) => 'lc_q${questionId}_note';
 
+  String _expAnswerKey(int questionId, String itemId) =>
+      'le_q${questionId}_$itemId';
+
+  String _expNoteKey(int questionId) => 'le_q${questionId}_note';
+
   int _correctCount(_AdlQuestion question) {
     return question.items.where((item) {
       final key = _answerKey(question.id, item.id);
@@ -159,6 +171,17 @@ class _AdlProtocolPageState extends State<AdlProtocolPage> {
 
   int _questionScore(_AdlQuestion question) {
     return _correctCount(question) >= question.minCorrect ? 1 : 0;
+  }
+
+  int _expressivaCorrectCount(_AdlQuestion question) {
+    return question.items.where((item) {
+      final key = _expAnswerKey(question.id, item.id);
+      return _expressiveAnswers[key] == true;
+    }).length;
+  }
+
+  int _expressivaQuestionScore(_AdlQuestion question) {
+    return _expressivaCorrectCount(question) >= question.minCorrect ? 1 : 0;
   }
 
   int _groupScore(_AdlAgeGroup group) {
@@ -180,8 +203,23 @@ class _AdlProtocolPageState extends State<AdlProtocolPage> {
   }
 
   int get _expressivaTotal {
-    final items = [_q1ExpMet, _q2ExpMet, _q3ExpMet];
-    return items.where((v) => v == true).length;
+    return _expressiveGroups.fold<int>(
+      0,
+      (total, group) =>
+          total +
+          group.questions.fold<int>(
+            0,
+            (groupTotal, question) =>
+                groupTotal + _expressivaQuestionScore(question),
+          ),
+    );
+  }
+
+  int get _maxExpressivaTotal {
+    return _expressiveGroups.fold<int>(
+      0,
+      (total, group) => total + group.questions.length,
+    );
   }
 
   bool _isCurrentGroupCompleted(_AdlAgeGroup group) {
@@ -189,6 +227,16 @@ class _AdlProtocolPageState extends State<AdlProtocolPage> {
       for (final item in question.items) {
         final key = _answerKey(question.id, item.id);
         if (_answers[key] == null) return false;
+      }
+    }
+    return true;
+  }
+
+  bool _isCurrentExpressiveGroupCompleted(_AdlAgeGroup group) {
+    for (final question in group.questions) {
+      for (final item in question.items) {
+        final key = _expAnswerKey(question.id, item.id);
+        if (_expressiveAnswers[key] == null) return false;
       }
     }
     return true;
@@ -206,6 +254,9 @@ class _AdlProtocolPageState extends State<AdlProtocolPage> {
 
     final previousReceptive = Map<String, dynamic>.from(
       widget.protocol?.receptiveAnswers ?? {},
+    );
+    final previousExpressive = Map<String, dynamic>.from(
+      widget.protocol?.expressiveAnswers ?? {},
     );
 
     final receptiveAnswers = <String, dynamic>{
@@ -237,21 +288,35 @@ class _AdlProtocolPageState extends State<AdlProtocolPage> {
       }
     }
 
+    final expressiveAnswers = <String, dynamic>{
+      ...previousExpressive,
+      'leCurrentBandIndex': _selectedExpressiveGroupIndex,
+      'leTotal': _expressivaTotal,
+      'leMaxTotal': _maxExpressivaTotal,
+    };
+
+    for (final group in _expressiveGroups) {
+      for (final question in group.questions) {
+        expressiveAnswers['le_q${question.id}_score'] =
+            _expressivaQuestionScore(question);
+        expressiveAnswers['le_q${question.id}_acertos'] =
+            _expressivaCorrectCount(question);
+
+        final noteKey = _expNoteKey(question.id);
+        expressiveAnswers[noteKey] =
+            _expressiveNotesControllers[noteKey]?.text.trim() ?? '';
+
+        for (final item in question.items) {
+          final key = _expAnswerKey(question.id, item.id);
+          expressiveAnswers[key] = _expressiveAnswers[key];
+        }
+      }
+    }
+
     final protocol = AdlProtocol(
       pacienteId: widget.pacienteId,
       receptiveAnswers: receptiveAnswers,
-      expressiveAnswers: {
-        ...Map<String, dynamic>.from(widget.protocol?.expressiveAnswers ?? {}),
-        'q1Met': _q1ExpMet,
-        'q2Met': _q2ExpMet,
-        'q3Met': _q3ExpMet,
-        'q1Text': _q1ExpText.text.trim(),
-        'q2Text': _q2ExpText.text.trim(),
-        'q3Text': _q3ExpText.text.trim(),
-        'q1Score': _q1ExpMet == true ? '1' : '0',
-        'q2Score': _q2ExpMet == true ? '1' : '0',
-        'q3Score': _q3ExpMet == true ? '1' : '0',
-      },
+      expressiveAnswers: expressiveAnswers,
       id: widget.protocol?.id,
       createdAt: widget.protocol?.createdAt,
     );
@@ -324,16 +389,24 @@ class _AdlProtocolPageState extends State<AdlProtocolPage> {
   Future<void> _onSaveDraft() async {
     await _saveProtocol(completedComprehensive: false);
     if (!mounted) return;
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(
-        content: Text('Rascunho da linguagem compreensiva salvo.'),
-      ),
-    );
+    final message = _selectedSection == _AdlSection.compreensiva
+        ? 'Rascunho da linguagem compreensiva salvo.'
+        : 'Rascunho da linguagem expressiva salvo.';
+    ScaffoldMessenger.of(
+      context,
+    ).showSnackBar(SnackBar(content: Text(message)));
   }
 
   void _goNextGroup() {
-    if (_selectedGroupIndex >= _groups.length - 1) return;
-    setState(() => _selectedGroupIndex += 1);
+    if (_selectedSection == _AdlSection.compreensiva) {
+      if (_selectedGroupIndex >= _groups.length - 1) return;
+      setState(() => _selectedGroupIndex += 1);
+    } else {
+      if (_selectedExpressiveGroupIndex >= _expressiveGroups.length - 1) {
+        return;
+      }
+      setState(() => _selectedExpressiveGroupIndex += 1);
+    }
     _scrollToTop();
   }
 
@@ -349,8 +422,7 @@ class _AdlProtocolPageState extends State<AdlProtocolPage> {
     });
   }
 
-  Widget _buildScoreChip(_AdlQuestion question) {
-    final score = _questionScore(question);
+  Widget _buildScoreChip(int score) {
     final colorScheme = Theme.of(context).colorScheme;
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
@@ -424,7 +496,7 @@ class _AdlProtocolPageState extends State<AdlProtocolPage> {
                   ),
                 ),
                 const SizedBox(width: 8),
-                _buildScoreChip(question),
+                _buildScoreChip(_questionScore(question)),
               ],
             ),
             const SizedBox(height: 12),
@@ -556,6 +628,186 @@ class _AdlProtocolPageState extends State<AdlProtocolPage> {
     );
   }
 
+  Widget _buildExpressiveQuestionCard(_AdlQuestion question) {
+    final noteKey = _expNoteKey(question.id);
+    final noteController = _expressiveNotesControllers[noteKey]!;
+    final colorScheme = Theme.of(context).colorScheme;
+
+    return Card(
+      margin: const EdgeInsets.only(bottom: 14),
+      color: colorScheme.surface,
+      elevation: 1,
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+      child: Padding(
+        padding: const EdgeInsets.all(14),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Container(
+                  width: 28,
+                  height: 28,
+                  decoration: BoxDecoration(
+                    color: colorScheme.primary,
+                    shape: BoxShape.circle,
+                  ),
+                  child: Center(
+                    child: Text(
+                      '${question.id}',
+                      style: TextStyle(
+                        color: colorScheme.onPrimary,
+                        fontWeight: FontWeight.w600,
+                        fontSize: 12,
+                      ),
+                    ),
+                  ),
+                ),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: Text(
+                    question.title,
+                    style: TextStyle(
+                      fontSize: 14,
+                      fontWeight: FontWeight.w700,
+                      color: colorScheme.onSurface,
+                    ),
+                  ),
+                ),
+                const SizedBox(width: 8),
+                _buildScoreChip(_expressivaQuestionScore(question)),
+              ],
+            ),
+            const SizedBox(height: 12),
+            Container(
+              padding: const EdgeInsets.all(8),
+              decoration: BoxDecoration(
+                color: colorScheme.surfaceContainerHighest,
+                borderRadius: BorderRadius.circular(6),
+              ),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  RichText(
+                    text: TextSpan(
+                      children: [
+                        TextSpan(
+                          text: 'Material: ',
+                          style: TextStyle(
+                            fontSize: 11,
+                            fontWeight: FontWeight.w600,
+                            color: colorScheme.onSurfaceVariant,
+                          ),
+                        ),
+                        TextSpan(
+                          text: question.material,
+                          style: TextStyle(
+                            fontSize: 11,
+                            color: colorScheme.onSurface,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                  const SizedBox(height: 4),
+                  RichText(
+                    text: TextSpan(
+                      children: [
+                        TextSpan(
+                          text: 'Procedimento: ',
+                          style: TextStyle(
+                            fontSize: 11,
+                            fontWeight: FontWeight.w600,
+                            color: colorScheme.onSurfaceVariant,
+                          ),
+                        ),
+                        TextSpan(
+                          text: question.procedure,
+                          style: TextStyle(
+                            fontSize: 11,
+                            color: colorScheme.onSurface,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            const SizedBox(height: 10),
+            ...question.items.map((item) {
+              final answerKey = _expAnswerKey(question.id, item.id);
+              final value = _expressiveAnswers[answerKey];
+              return Container(
+                padding: const EdgeInsets.all(10),
+                margin: const EdgeInsets.only(bottom: 8),
+                decoration: BoxDecoration(
+                  color: colorScheme.surfaceContainerHighest,
+                  borderRadius: BorderRadius.circular(10),
+                  border: Border.all(color: colorScheme.outlineVariant),
+                ),
+                child: Row(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Expanded(
+                      child: Text(
+                        '(${item.id}) ${item.label}',
+                        style: TextStyle(
+                          fontSize: 12,
+                          color: colorScheme.onSurface,
+                        ),
+                      ),
+                    ),
+                    const SizedBox(width: 12),
+                    _buildYesNoControl(
+                      value: value,
+                      onChanged: (newValue) {
+                        setState(() {
+                          _expressiveAnswers[answerKey] = newValue;
+                        });
+                      },
+                    ),
+                  ],
+                ),
+              );
+            }),
+            const SizedBox(height: 10),
+            TextFormField(
+              controller: noteController,
+              minLines: 2,
+              maxLines: 4,
+              decoration: InputDecoration(
+                labelText: 'Observações da questão (opcional)',
+                labelStyle: TextStyle(
+                  fontSize: 12,
+                  color: colorScheme.onSurfaceVariant,
+                ),
+                border: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(8),
+                ),
+                contentPadding: const EdgeInsets.symmetric(
+                  horizontal: 12,
+                  vertical: 10,
+                ),
+              ),
+              style: TextStyle(fontSize: 12, color: colorScheme.onSurface),
+            ),
+            const SizedBox(height: 8),
+            Text(
+              'Regra de pontuação: ${question.scoreRule}',
+              style: TextStyle(
+                fontWeight: FontWeight.w600,
+                fontSize: 11,
+                color: colorScheme.onSurfaceVariant,
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
   Widget _buildYesNoControl({
     required bool? value,
     required ValueChanged<bool?> onChanged,
@@ -591,13 +843,27 @@ class _AdlProtocolPageState extends State<AdlProtocolPage> {
   }
 
   Widget _buildGroupView() {
-    final group = _groups[_selectedGroupIndex];
+    final groups = _selectedSection == _AdlSection.compreensiva
+        ? _groups
+        : _expressiveGroups;
+    final selectedIndex = _selectedSection == _AdlSection.compreensiva
+        ? _selectedGroupIndex
+        : _selectedExpressiveGroupIndex;
+    final group = groups[selectedIndex];
     final colorScheme = Theme.of(context).colorScheme;
+    final sectionTitle = _selectedSection == _AdlSection.compreensiva
+        ? 'Linguagem Compreensiva'
+        : 'Linguagem Expressiva';
+    final sectionScore = _selectedSection == _AdlSection.compreensiva
+        ? _groupScore(group)
+        : group.questions.fold<int>(
+            0,
+            (total, question) => total + _expressivaQuestionScore(question),
+          );
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        // Header da faixa
         Container(
           padding: const EdgeInsets.all(16),
           decoration: BoxDecoration(
@@ -612,7 +878,7 @@ class _AdlProtocolPageState extends State<AdlProtocolPage> {
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               Text(
-                'Linguagem Compreensiva',
+                sectionTitle,
                 style: TextStyle(
                   fontSize: 14,
                   fontWeight: FontWeight.w600,
@@ -643,7 +909,7 @@ class _AdlProtocolPageState extends State<AdlProtocolPage> {
                   borderRadius: BorderRadius.circular(20),
                 ),
                 child: Text(
-                  'Pontuação: ${_groupScore(group)}/${group.questions.length}',
+                  'Pontuação: $sectionScore/${group.questions.length}',
                   style: TextStyle(
                     fontSize: 12,
                     fontWeight: FontWeight.w600,
@@ -655,17 +921,25 @@ class _AdlProtocolPageState extends State<AdlProtocolPage> {
           ),
         ),
         const SizedBox(height: 16),
-
-        // Perguntas
-        ...group.questions.map(_buildQuestionCard),
+        ...group.questions.map(
+          _selectedSection == _AdlSection.compreensiva
+              ? _buildQuestionCard
+              : _buildExpressiveQuestionCard,
+        ),
       ],
     );
   }
 
   Widget _buildHeader() {
     final colorScheme = Theme.of(context).colorScheme;
-    final currentGroup = _groups[_selectedGroupIndex];
-    final progress = (_selectedGroupIndex + 1) / _groups.length;
+    final groups = _selectedSection == _AdlSection.compreensiva
+        ? _groups
+        : _expressiveGroups;
+    final selectedIndex = _selectedSection == _AdlSection.compreensiva
+        ? _selectedGroupIndex
+        : _selectedExpressiveGroupIndex;
+    final currentGroup = groups[selectedIndex];
+    final progress = (selectedIndex + 1) / groups.length;
 
     return Container(
       padding: const EdgeInsets.all(16),
@@ -695,7 +969,7 @@ class _AdlProtocolPageState extends State<AdlProtocolPage> {
           ),
           const SizedBox(height: 12),
           Text(
-            'Responda uma faixa etária por vez. Ao finalizar toda a linguagem compreensiva, você poderá seguir para a linguagem expressiva.',
+            'Responda uma faixa etária por vez em cada seção. Você pode salvar e continuar depois.',
             style: TextStyle(
               fontSize: 12,
               color: colorScheme.onSurfaceVariant,
@@ -713,7 +987,7 @@ class _AdlProtocolPageState extends State<AdlProtocolPage> {
               const SizedBox(width: 6),
               Expanded(
                 child: Text(
-                  'Faixa ${_selectedGroupIndex + 1} de ${_groups.length}: ${currentGroup.label}',
+                  'Faixa ${selectedIndex + 1} de ${groups.length}: ${currentGroup.label}',
                   style: TextStyle(
                     fontSize: 12,
                     fontWeight: FontWeight.w600,
@@ -755,7 +1029,7 @@ class _AdlProtocolPageState extends State<AdlProtocolPage> {
                       Text(
                         _selectedSection == _AdlSection.compreensiva
                             ? '$_comprehensiveTotal/$_maxComprehensiveTotal'
-                            : '$_expressivaTotal/3',
+                            : '$_expressivaTotal/$_maxExpressivaTotal',
                         style: TextStyle(
                           fontSize: 18,
                           fontWeight: FontWeight.bold,
@@ -814,12 +1088,12 @@ class _AdlProtocolPageState extends State<AdlProtocolPage> {
       segments: const [
         ButtonSegment<_AdlSection>(
           value: _AdlSection.compreensiva,
-          label: Text('2. Compreensiva'),
+          label: Text('2. LINGUAGEM COMPREENSIVA'),
           icon: Icon(Icons.hearing_outlined),
         ),
         ButtonSegment<_AdlSection>(
           value: _AdlSection.expressiva,
-          label: Text('3. Expressiva'),
+          label: Text('3. LINGUAGEM EXPRESSIVA'),
           icon: Icon(Icons.record_voice_over_outlined),
         ),
       ],
@@ -839,114 +1113,49 @@ class _AdlProtocolPageState extends State<AdlProtocolPage> {
   }
 
   Widget _buildBandPicker() {
+    final groups = _selectedSection == _AdlSection.compreensiva
+        ? _groups
+        : _expressiveGroups;
+    final selectedIndex = _selectedSection == _AdlSection.compreensiva
+        ? _selectedGroupIndex
+        : _selectedExpressiveGroupIndex;
+
     return DropdownButtonFormField<int>(
-      initialValue: _selectedGroupIndex,
+      initialValue: selectedIndex,
       decoration: InputDecoration(
         labelText: 'Tela por faixa etária',
         border: OutlineInputBorder(borderRadius: BorderRadius.circular(8)),
         contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
       ),
       items: List.generate(
-        _groups.length,
+        groups.length,
         (index) => DropdownMenuItem<int>(
           value: index,
-          child: Text('${index + 1}. ${_groups[index].label}'),
+          child: Text('${index + 1}. ${groups[index].label}'),
         ),
       ),
       onChanged: (value) {
         if (value == null) return;
-        setState(() => _selectedGroupIndex = value);
+        setState(() {
+          if (_selectedSection == _AdlSection.compreensiva) {
+            _selectedGroupIndex = value;
+          } else {
+            _selectedExpressiveGroupIndex = value;
+          }
+        });
         _scrollToTop();
       },
     );
   }
 
-  Widget _buildExpressivaQuestion({
-    required String title,
-    required bool? value,
-    required ValueChanged<bool?> onChanged,
-    required TextEditingController notes,
-  }) {
-    final colorScheme = Theme.of(context).colorScheme;
-    return Card(
-      margin: const EdgeInsets.only(bottom: 12),
-      child: Padding(
-        padding: const EdgeInsets.all(12),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text(
-              title,
-              style: TextStyle(
-                fontWeight: FontWeight.w700,
-                color: colorScheme.onSurface,
-              ),
-            ),
-            const SizedBox(height: 8),
-            Wrap(
-              spacing: 10,
-              runSpacing: 6,
-              children: [
-                FilterChip(
-                  label: const Text('Critério atendido'),
-                  selected: value == true,
-                  onSelected: (_) => onChanged(value == true ? null : true),
-                ),
-                FilterChip(
-                  label: const Text('Não atendido'),
-                  selected: value == false,
-                  onSelected: (_) => onChanged(value == false ? null : false),
-                ),
-              ],
-            ),
-            const SizedBox(height: 8),
-            TextFormField(
-              controller: notes,
-              minLines: 2,
-              maxLines: 4,
-              decoration: InputDecoration(
-                labelText: 'Observações',
-                border: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(8),
-                ),
-              ),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-
-  Widget _buildExpressivaView() {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.stretch,
-      children: [
-        _buildExpressivaQuestion(
-          title:
-              '1. Participa de brincadeiras com outra pessoa pelo período de 1 a 2 minutos.',
-          value: _q1ExpMet,
-          onChanged: (v) => setState(() => _q1ExpMet = v),
-          notes: _q1ExpText,
-        ),
-        _buildExpressivaQuestion(
-          title: '2. Comunica-se de forma gestual.',
-          value: _q2ExpMet,
-          onChanged: (v) => setState(() => _q2ExpMet = v),
-          notes: _q2ExpText,
-        ),
-        _buildExpressivaQuestion(
-          title:
-              '3. Vocaliza sem que movimentos de pernas e braços acompanhem a emissão dos sons.',
-          value: _q3ExpMet,
-          onChanged: (v) => setState(() => _q3ExpMet = v),
-          notes: _q3ExpText,
-        ),
-      ],
-    );
-  }
-
   Widget _buildActionButtons() {
-    final isLast = _selectedGroupIndex == _groups.length - 1;
+    final groups = _selectedSection == _AdlSection.compreensiva
+        ? _groups
+        : _expressiveGroups;
+    final selectedIndex = _selectedSection == _AdlSection.compreensiva
+        ? _selectedGroupIndex
+        : _selectedExpressiveGroupIndex;
+    final isLast = selectedIndex == groups.length - 1;
 
     return Wrap(
       spacing: 8,
@@ -964,7 +1173,11 @@ class _AdlProtocolPageState extends State<AdlProtocolPage> {
         SizedBox(
           height: 40,
           child: ElevatedButton.icon(
-            onPressed: isLast ? _onFinishComprehensive : _goNextGroup,
+            onPressed: isLast
+                ? (_selectedSection == _AdlSection.compreensiva
+                      ? _onFinishComprehensive
+                      : _onSaveDraft)
+                : _goNextGroup,
             icon: Icon(
               isLast ? Icons.check_circle_outline : Icons.navigate_next,
               size: 18,
@@ -979,22 +1192,36 @@ class _AdlProtocolPageState extends State<AdlProtocolPage> {
 
   Widget _buildBandsProgressStrip() {
     final colorScheme = Theme.of(context).colorScheme;
+    final groups = _selectedSection == _AdlSection.compreensiva
+        ? _groups
+        : _expressiveGroups;
+    final selectedIndex = _selectedSection == _AdlSection.compreensiva
+        ? _selectedGroupIndex
+        : _selectedExpressiveGroupIndex;
 
     return SizedBox(
       height: 42,
       child: ListView.separated(
         scrollDirection: Axis.horizontal,
-        itemCount: _groups.length,
+        itemCount: groups.length,
         separatorBuilder: (_, _) => const SizedBox(width: 8),
         itemBuilder: (context, index) {
-          final group = _groups[index];
-          final isSelected = index == _selectedGroupIndex;
-          final isCompleted = _isCurrentGroupCompleted(group);
+          final group = groups[index];
+          final isSelected = index == selectedIndex;
+          final isCompleted = _selectedSection == _AdlSection.compreensiva
+              ? _isCurrentGroupCompleted(group)
+              : _isCurrentExpressiveGroupCompleted(group);
 
           return ChoiceChip(
             selected: isSelected,
             onSelected: (_) {
-              setState(() => _selectedGroupIndex = index);
+              setState(() {
+                if (_selectedSection == _AdlSection.compreensiva) {
+                  _selectedGroupIndex = index;
+                } else {
+                  _selectedExpressiveGroupIndex = index;
+                }
+              });
               _scrollToTop();
             },
             label: Text('${index + 1}'),
@@ -1018,7 +1245,13 @@ class _AdlProtocolPageState extends State<AdlProtocolPage> {
   }
 
   Future<void> _openQuickActionsMenu() async {
-    final isLast = _selectedGroupIndex == _groups.length - 1;
+    final groups = _selectedSection == _AdlSection.compreensiva
+        ? _groups
+        : _expressiveGroups;
+    final selectedIndex = _selectedSection == _AdlSection.compreensiva
+        ? _selectedGroupIndex
+        : _selectedExpressiveGroupIndex;
+    final isLast = selectedIndex == groups.length - 1;
 
     await showModalBottomSheet<void>(
       context: context,
@@ -1052,7 +1285,11 @@ class _AdlProtocolPageState extends State<AdlProtocolPage> {
                 onTap: () async {
                   Navigator.of(context).pop();
                   if (isLast) {
-                    await _onFinishComprehensive();
+                    if (_selectedSection == _AdlSection.compreensiva) {
+                      await _onFinishComprehensive();
+                    } else {
+                      await _onSaveDraft();
+                    }
                   } else {
                     _goNextGroup();
                   }
@@ -1083,12 +1320,24 @@ class _AdlProtocolPageState extends State<AdlProtocolPage> {
                 const Divider(height: 1),
                 Expanded(
                   child: ListView.separated(
-                    itemCount: _groups.length,
+                    itemCount: _selectedSection == _AdlSection.compreensiva
+                        ? _groups.length
+                        : _expressiveGroups.length,
                     separatorBuilder: (_, _) => const Divider(height: 1),
                     itemBuilder: (context, index) {
-                      final group = _groups[index];
-                      final isSelected = index == _selectedGroupIndex;
-                      final isCompleted = _isCurrentGroupCompleted(group);
+                      final groups = _selectedSection == _AdlSection.compreensiva
+                          ? _groups
+                          : _expressiveGroups;
+                      final group = groups[index];
+                      final selectedIndex =
+                          _selectedSection == _AdlSection.compreensiva
+                          ? _selectedGroupIndex
+                          : _selectedExpressiveGroupIndex;
+                      final isSelected = index == selectedIndex;
+                      final isCompleted =
+                          _selectedSection == _AdlSection.compreensiva
+                          ? _isCurrentGroupCompleted(group)
+                          : _isCurrentExpressiveGroupCompleted(group);
 
                       return ListTile(
                         selected: isSelected,
@@ -1098,7 +1347,7 @@ class _AdlProtocolPageState extends State<AdlProtocolPage> {
                         ),
                         title: Text(group.label),
                         subtitle: Text(
-                          'Pontuação: ${_groupScore(group)}/${group.questions.length}',
+                          'Pontuação: ${_selectedSection == _AdlSection.compreensiva ? _groupScore(group) : group.questions.fold<int>(0, (total, question) => total + _expressivaQuestionScore(question))}/${group.questions.length}',
                         ),
                         trailing: isSelected
                             ? const Icon(Icons.check_circle)
@@ -1108,7 +1357,13 @@ class _AdlProtocolPageState extends State<AdlProtocolPage> {
                                     : Icons.radio_button_unchecked,
                               ),
                         onTap: () {
-                          setState(() => _selectedGroupIndex = index);
+                          setState(() {
+                            if (_selectedSection == _AdlSection.compreensiva) {
+                              _selectedGroupIndex = index;
+                            } else {
+                              _selectedExpressiveGroupIndex = index;
+                            }
+                          });
                           Navigator.of(context).pop();
                           _scrollToTop();
                         },
@@ -1135,26 +1390,13 @@ class _AdlProtocolPageState extends State<AdlProtocolPage> {
           const SizedBox(height: 16),
           _buildSectionSelector(),
           const SizedBox(height: 16),
-          if (_selectedSection == _AdlSection.compreensiva) ...[
-            _buildActionButtons(),
-            const SizedBox(height: 16),
-            _buildBandPicker(),
-            const SizedBox(height: 12),
-            _buildBandsProgressStrip(),
-            const SizedBox(height: 12),
-            _buildGroupView(),
-          ] else ...[
-            SizedBox(
-              height: 40,
-              child: OutlinedButton.icon(
-                onPressed: _onSaveDraft,
-                icon: const Icon(Icons.save_outlined, size: 18),
-                label: const Text('Salvar'),
-              ),
-            ),
-            const SizedBox(height: 12),
-            _buildExpressivaView(),
-          ],
+          _buildActionButtons(),
+          const SizedBox(height: 16),
+          _buildBandPicker(),
+          const SizedBox(height: 12),
+          _buildBandsProgressStrip(),
+          const SizedBox(height: 12),
+          _buildGroupView(),
         ],
       ),
     );
@@ -2082,6 +2324,557 @@ class _AdlProtocolPageState extends State<AdlProtocolPage> {
               _AdlQuestionItem(id: 'f', label: 'g-a-t-o (gato).'),
               _AdlQuestionItem(id: 'g', label: 'f-o-c-a (foca).'),
             ],
+          ),
+        ],
+      ),
+    ];
+  }
+
+  List<_AdlAgeGroup> _buildExpressiveGroups() {
+    _AdlQuestion q({
+      required int id,
+      required String title,
+      required String material,
+      required String procedure,
+      required String scoreRule,
+    }) {
+      return _AdlQuestion(
+        id: id,
+        title: title,
+        material: material,
+        procedure: procedure,
+        scoreRule: scoreRule,
+        minCorrect: 1,
+        items: const [
+          _AdlQuestionItem(
+            id: 'a',
+            label: 'Critério atendido conforme regra da questão.',
+          ),
+        ],
+      );
+    }
+
+    return [
+      _AdlAgeGroup(
+        label: '1 ano a 1 ano e 5 meses',
+        questions: [
+          q(
+            id: 1,
+            title:
+                'Participa de brincadeiras com outra pessoa por 1 a 2 minutos.',
+            material: 'Marcador de tempo, paninho e brinquedos.',
+            procedure:
+                'Observar interação da criança com cuidador/examinador durante brincadeira.',
+            scoreRule:
+                '1 ponto quando mantém contato visual e demonstra prazer na brincadeira.',
+          ),
+          q(
+            id: 2,
+            title: 'Comunica-se de forma gestual.',
+            material: 'Brinquedos.',
+            procedure:
+                'Durante a brincadeira, observar comunicação gestual intencional.',
+            scoreRule:
+                '1 ponto quando usa um ou mais gestos com intenção de se comunicar.',
+          ),
+          q(
+            id: 3,
+            title:
+                'Vocaliza sem movimentos corporais acompanhando a emissão dos sons.',
+            material: 'Brinquedos.',
+            procedure:
+                'Cuidador/examinador imita sons da criança e observa resposta vocal.',
+            scoreRule:
+                '1 ponto quando responde vocalizando sem movimentos de corpo.',
+          ),
+          q(
+            id: 4,
+            title: 'Emite sequências de duas sílabas.',
+            material: 'Brinquedos.',
+            procedure:
+                'Estimular fala com perguntas contextualizadas durante a brincadeira.',
+            scoreRule:
+                '1 ponto quando produz uma ou mais sequências de duas sílabas.',
+          ),
+          q(
+            id: 5,
+            title: 'Tem vocabulário de pelo menos uma palavra.',
+            material: 'Brinquedos.',
+            procedure:
+                'Nomear objetos e solicitar nomeação espontânea/repetida da criança.',
+            scoreRule:
+                '1 ponto quando usa consistentemente combinação de sons para nomear objeto/pessoa.',
+          ),
+          q(
+            id: 6,
+            title: 'Faz turnos durante uma brincadeira.',
+            material: 'Paninho e brinquedos.',
+            procedure:
+                'Realizar brincadeira de turnos (esconde-esconde/achou) e observar alternância.',
+            scoreRule:
+                '1 ponto quando se engaja e espera sua vez e a do examinador.',
+          ),
+          q(
+            id: 7,
+            title: 'Imita uma variedade de sons (fonemas).',
+            material: 'Brinquedos.',
+            procedure:
+                'Evocar e observar repetição espontânea/imitada de fonemas alvo.',
+            scoreRule:
+                '1 ponto quando emite quatro fonemas diferentes.',
+          ),
+        ],
+      ),
+      _AdlAgeGroup(
+        label: '1 ano e 6 meses a 1 ano e 11 meses',
+        questions: [
+          q(
+            id: 8,
+            title:
+                'Comunica-se por vocalizações e gestos para obter um objeto.',
+            material: 'Brinquedos.',
+            procedure:
+                'Colocar brinquedos preferidos fora de alcance e perguntar qual quer.',
+            scoreRule:
+                '1 ponto quando aponta/vocaliza/dirige-se ao objeto com intenção comunicativa.',
+          ),
+          q(
+            id: 9,
+            title: 'Imita uma palavra.',
+            material: 'Brinquedos.',
+            procedure:
+                'Falar palavra familiar e observar imitação durante avaliação.',
+            scoreRule:
+                '1 ponto quando imita ao menos uma palavra.',
+          ),
+          q(
+            id: 10,
+            title: 'Produz sequências de palavras.',
+            material: 'Brinquedos.',
+            procedure:
+                'Estimular fala em contexto lúdico e observar combinação verbal.',
+            scoreRule:
+                '1 ponto quando produz sequência de duas ou mais palavras.',
+          ),
+          q(
+            id: 11,
+            title: 'Vocabulário expressivo espontâneo de cinco a dez palavras.',
+            material: 'Brinquedos e livros infantis.',
+            procedure:
+                'Observar fala espontânea e registrar palavras produzidas.',
+            scoreRule:
+                '1 ponto quando observa/relata cinco ou mais palavras espontâneas.',
+          ),
+          q(
+            id: 12,
+            title:
+                'Fala sequência sem significado com entonação semelhante ao adulto (jargão).',
+            material: 'Livro com figuras ou cena com brinquedos.',
+            procedure:
+                'Estimular descrição da cena e observar prosódia tipo fala adulta.',
+            scoreRule:
+                '1 ponto quando emite sequência com prosódia/entonação de fala adulta.',
+          ),
+        ],
+      ),
+      _AdlAgeGroup(
+        label: '2 anos a 2 anos e 5 meses',
+        questions: [
+          q(
+            id: 13,
+            title: 'Usa palavras com intenção de se comunicar.',
+            material: 'Saco pequeno da ADL 2 e brinquedos.',
+            procedure:
+                'Criar situação de solicitação de objetos dentro do saco e observar pedidos.',
+            scoreRule:
+                '1 ponto quando pede objetos com palavras (com ou sem gestos).',
+          ),
+          q(
+            id: 14,
+            title: 'Combina duas ou mais palavras com significado.',
+            material: 'Brinquedos.',
+            procedure:
+                'Observar linguagem espontânea e estimular combinações durante brincadeira.',
+            scoreRule:
+                '1 ponto quando produz sequência com significado semântico.',
+          ),
+          q(
+            id: 15,
+            title: 'Nomeia figuras.',
+            material: 'Manual de Figuras, páginas 1 e 2.',
+            procedure: 'Solicitar nomeação das figuras-alvo.',
+            scoreRule: '1 ponto com 6 acertos (falhas fonológicas não contam).',
+          ),
+          q(
+            id: 16,
+            title: 'Comunica-se mais por palavras do que por gestos.',
+            material: 'Brinquedos e objetos.',
+            procedure: 'Observar e anotar palavras e gestos durante avaliação.',
+            scoreRule:
+                '1 ponto quando comunicação por palavras predomina sobre gestos.',
+          ),
+        ],
+      ),
+      _AdlAgeGroup(
+        label: '2 anos e 6 meses a 2 anos e 11 meses',
+        questions: [
+          q(
+            id: 17,
+            title: 'Combina três ou quatro palavras na fala espontânea.',
+            material: 'Brinquedos e objetos.',
+            procedure:
+                'Descrever ações na brincadeira e estimular resposta verbal mais longa.',
+            scoreRule:
+                '1 ponto quando se expressa com sequência de três ou mais palavras.',
+          ),
+          q(
+            id: 18,
+            title: 'Responde com substantivo indicando posse.',
+            material: 'Manual de Figuras, página 3.',
+            procedure: 'Apresentar pares e solicitar resposta de posse.',
+            scoreRule: '1 ponto com 2 respostas corretas.',
+          ),
+          q(
+            id: 19,
+            title: 'Vocabulário expressivo.',
+            material: 'Manual de Figuras, páginas 4 e 5.',
+            procedure: 'Solicitar nomeação dos itens.',
+            scoreRule: '1 ponto com 6 acertos (falhas fonológicas não contam).',
+          ),
+        ],
+      ),
+      _AdlAgeGroup(
+        label: '3 anos a 3 anos e 5 meses',
+        questions: [
+          q(
+            id: 20,
+            title: 'Usa verbo no gerúndio.',
+            material: 'Manual de Figuras, página 6.',
+            procedure: 'Modelar exemplo e perguntar ações das outras figuras.',
+            scoreRule: '1 ponto com 2 respostas corretas.',
+          ),
+          q(
+            id: 21,
+            title:
+                'Responde questões com o que, onde e negação não.',
+            material: 'Manual de Figuras, página 7.',
+            procedure: 'Fazer perguntas dirigidas sobre cena e estado.',
+            scoreRule: '1 ponto com 2 respostas corretas.',
+          ),
+          q(
+            id: 22,
+            title: 'Nomeia cores.',
+            material: 'Manual de Figuras, página 8.',
+            procedure: 'Apontar bolas e solicitar nome da cor.',
+            scoreRule: '1 ponto com 4 respostas corretas.',
+          ),
+          q(
+            id: 23,
+            title: 'Usa diferentes combinações de palavras para se expressar.',
+            material: 'Manual de Figuras, página 9.',
+            procedure: 'Solicitar descrição de ações em figuras.',
+            scoreRule:
+                '1 ponto quando produz frase com pronome/substantivo + verbo.',
+          ),
+        ],
+      ),
+      _AdlAgeGroup(
+        label: '3 anos e 6 meses a 3 anos e 11 meses',
+        questions: [
+          q(
+            id: 24,
+            title: 'Usa palavras de relação espacial.',
+            material: 'Manual de Figuras, página 10.',
+            procedure: 'Perguntar onde está o cachorro em cada cena.',
+            scoreRule: '1 ponto com 3 respostas corretas.',
+          ),
+          q(
+            id: 25,
+            title: 'Conceito de quantidade.',
+            material: 'Manual de Figuras, página 11.',
+            procedure: 'Pedir para contar/expressar quantidade.',
+            scoreRule:
+                '1 ponto quando usa palavra ou número que expresse quantidade.',
+          ),
+          q(
+            id: 26,
+            title:
+                'Soluciona e responde questões sobre situações do cotidiano.',
+            material: 'Não necessário.',
+            procedure: 'Perguntar o que faz quando está com sono, mãos sujas e fome.',
+            scoreRule: '1 ponto com 3 respostas corretas.',
+          ),
+          q(
+            id: 27,
+            title: 'Descreve ações em sequência de figuras.',
+            material: 'Manual de Figuras, página 12.',
+            procedure: 'Pedir continuação da sequência após exemplo inicial.',
+            scoreRule:
+                '1 ponto quando completa as duas frases com semântica adequada.',
+          ),
+        ],
+      ),
+      _AdlAgeGroup(
+        label: '4 anos a 4 anos e 5 meses',
+        questions: [
+          q(
+            id: 28,
+            title: 'Responde perguntas sobre atividades na escola.',
+            material: 'Não necessário.',
+            procedure: 'Fazer perguntas sobre escola, preferência e justificativa.',
+            scoreRule: '1 ponto quando responde 3 ou mais questões corretamente.',
+          ),
+          q(
+            id: 29,
+            title: 'Descreve uso de objetos.',
+            material: 'Não necessário.',
+            procedure: 'Perguntar para que servem bola, copo e tesoura.',
+            scoreRule: '1 ponto com 3 respostas corretas.',
+          ),
+          q(
+            id: 30,
+            title: 'Compreende questões com onde.',
+            material: 'Não necessário.',
+            procedure: 'Perguntar onde dorme, senta e lava as mãos.',
+            scoreRule: '1 ponto com 3 respostas corretas.',
+          ),
+          q(
+            id: 31,
+            title: 'Usa pronome possessivo.',
+            material: 'Manual de Figuras, página 13.',
+            procedure: 'Modelar e solicitar completamento com delas/dele.',
+            scoreRule: '1 ponto com 2 respostas corretas.',
+          ),
+          q(
+            id: 32,
+            title: 'Expressa quantidade.',
+            material: 'Manual de Figuras, página 14.',
+            procedure: 'Pedir quantidade no conjunto alvo de peixes.',
+            scoreRule: '1 ponto se responder corretamente.',
+          ),
+        ],
+      ),
+      _AdlAgeGroup(
+        label: '4 anos e 6 meses a 4 anos e 11 meses',
+        questions: [
+          q(
+            id: 33,
+            title: 'Descreve sequência de figuras.',
+            material: 'Manual de Figuras, página 15.',
+            procedure: 'Solicitar descrição das duas últimas cenas.',
+            scoreRule:
+                '1 ponto quando descreve com semântica adequada as duas figuras.',
+          ),
+          q(
+            id: 34,
+            title: 'Plural regular.',
+            material: 'Manual de Figuras, página 16.',
+            procedure: 'Modelar singular/plural e pedir completamento.',
+            scoreRule: '1 ponto quando acrescenta s no final das palavras.',
+          ),
+          q(
+            id: 35,
+            title: 'Usa verbo no tempo passado.',
+            material: 'Manual de Figuras, páginas 17 e 18.',
+            procedure: 'Pedir completamento com verbo no passado.',
+            scoreRule: '1 ponto com 2 respostas corretas.',
+          ),
+          q(
+            id: 36,
+            title: 'Expressa quantidade.',
+            material: 'Manual de Figuras, página 19.',
+            procedure:
+                'Comparar muito/pouco e pouca/muita em duas sequências.',
+            scoreRule: '1 ponto com 2 respostas corretas.',
+          ),
+          q(
+            id: 37,
+            title: 'Completa analogias.',
+            material: 'Não necessário.',
+            procedure: 'Pedir para completar três frases comparativas.',
+            scoreRule: '1 ponto com 2 respostas corretas.',
+          ),
+          q(
+            id: 38,
+            title: 'Categorização de nomes.',
+            material: 'Não necessário.',
+            procedure: 'Solicitar categoria para listas de animais e alimentos.',
+            scoreRule: '1 ponto com 2 respostas corretas.',
+          ),
+        ],
+      ),
+      _AdlAgeGroup(
+        label: '5 anos a 5 anos e 5 meses',
+        questions: [
+          q(
+            id: 39,
+            title: 'Responde sobre motivo de ações da rotina diária.',
+            material: 'Não necessário.',
+            procedure: 'Perguntar por que escova dentes e toma banho.',
+            scoreRule: '1 ponto com 2 respostas corretas.',
+          ),
+          q(
+            id: 40,
+            title: 'Utiliza adjetivos para descrever pessoas e objetos.',
+            material: 'Manual de Figuras, página 20.',
+            procedure: 'Brincadeira de adivinhação e descrição de figura.',
+            scoreRule: '1 ponto quando descreve figura com semântica adequada.',
+          ),
+          q(
+            id: 41,
+            title: 'Compreende e descreve similaridade entre objetos.',
+            material: 'Manual de Figuras, páginas 21 e 22.',
+            procedure:
+                'Perguntar semelhanças em três pares de figuras.',
+            scoreRule: '1 ponto com 3 respostas corretas.',
+          ),
+          q(
+            id: 42,
+            title: 'Memória para repetir sentenças.',
+            material: 'Não necessário.',
+            procedure: 'Solicitar repetição de três sentenças.',
+            scoreRule: '1 ponto com 3 repetições corretas.',
+          ),
+          q(
+            id: 43,
+            title: 'Descreve ações em sequência de figuras.',
+            material: 'Manual de Figuras, página 23.',
+            procedure: 'Pedir descrição da segunda e terceira figura.',
+            scoreRule:
+                '1 ponto quando completa as duas frases semanticamente corretas.',
+          ),
+          q(
+            id: 44,
+            title: 'Responde perguntas diante de sequência de figuras.',
+            material: 'Manual de Figuras, página 24.',
+            procedure: 'Perguntar estado, motivo e ação final das personagens.',
+            scoreRule:
+                '1 ponto quando responde com frases semanticamente corretas.',
+          ),
+        ],
+      ),
+      _AdlAgeGroup(
+        label: '5 anos e 6 meses a 5 anos e 11 meses',
+        questions: [
+          q(
+            id: 45,
+            title: 'Expressa quantidade.',
+            material: 'Manual de Figuras, páginas 25 e 26.',
+            procedure: 'Solicitar contagem de formigas e peixes.',
+            scoreRule: '1 ponto com 2 respostas corretas.',
+          ),
+          q(
+            id: 46,
+            title:
+                'Busca palavras em categoria semântica em tempo limitado.',
+            material: 'Cronômetro.',
+            procedure:
+                'Pedir nomes de comidas e animais em até 60 segundos.',
+            scoreRule: '1 ponto quando nomeia seis itens em uma categoria.',
+          ),
+          q(
+            id: 47,
+            title: 'Produz uma história diante de uma figura.',
+            material: 'Manual de Figuras, página 27.',
+            procedure: 'Solicitar narrativa sobre o que aconteceu na cena.',
+            scoreRule: '1 ponto quando elabora história semanticamente adequada.',
+          ),
+          q(
+            id: 48,
+            title: 'Relembra sentenças em contexto.',
+            material: 'Manual de Figuras, página 28.',
+            procedure:
+                'Após história guiada, pedir repetição de sentenças-alvo.',
+            scoreRule: '1 ponto quando repete corretamente 2 frases.',
+          ),
+        ],
+      ),
+      _AdlAgeGroup(
+        label: '6 anos a 6 anos e 5 meses',
+        questions: [
+          q(
+            id: 49,
+            title: 'Produz história diante de sequência de figuras.',
+            material: 'Manual de Figuras, página 29.',
+            procedure: 'Solicitar narrativa seguindo a ordem dos quadrinhos.',
+            scoreRule:
+                '1 ponto quando descreve sequência com semântica e sintaxe adequadas.',
+          ),
+          q(
+            id: 50,
+            title: 'Define palavras.',
+            material: 'Não necessário.',
+            procedure: 'Pedir definição de celular, banana e carro.',
+            scoreRule:
+                '1 ponto se descrever duas características de dois objetos.',
+          ),
+          q(
+            id: 51,
+            title: 'Relembra sentenças em contexto.',
+            material: 'Manual de Figuras, página 30.',
+            procedure:
+                'Narrar história e solicitar repetição literal das sentenças-alvo.',
+            scoreRule: '1 ponto quando repete sentenças conforme critério clínico.',
+          ),
+          q(
+            id: 52,
+            title: 'Produz história diante de sequência de figuras.',
+            material: 'Manual de Figuras, página 31.',
+            procedure: 'Solicitar narrativa completa da sequência visual.',
+            scoreRule:
+                '1 ponto quando narra em sequência com semântica e sintaxe adequadas.',
+          ),
+          q(
+            id: 53,
+            title: 'Reconta história com apoio visual.',
+            material: 'Manual de Figuras, páginas 32 e 33.',
+            procedure:
+                'Contar história modelo e solicitar reconto com início, meio e fim.',
+            scoreRule:
+                '1 ponto quando reconto mantém estrutura e conteúdo essenciais.',
+          ),
+        ],
+      ),
+      _AdlAgeGroup(
+        label: '6 anos e 6 meses a 6 anos e 11 meses',
+        questions: [
+          q(
+            id: 54,
+            title: 'Relembra e descreve rotina diária em etapas.',
+            material: 'Não necessário.',
+            procedure:
+                'Solicitar etapas para escovar os dentes e tomar banho.',
+            scoreRule: '1 ponto quando descreve 3 etapas em sequência.',
+          ),
+          q(
+            id: 55,
+            title: 'Relembra sentença em contexto.',
+            material: 'Manual de Figuras, página 34.',
+            procedure:
+                'Contar história da corrida e pedir repetição de sentenças-chave.',
+            scoreRule: '1 ponto quando repete corretamente 2 frases.',
+          ),
+          q(
+            id: 56,
+            title: 'Produz história diante de sequência de figuras.',
+            material: 'Manual de Figuras, páginas 35 e 36.',
+            procedure: 'Pedir narrativa sobre personagens no parque.',
+            scoreRule:
+                '1 ponto quando narra sequência com semântica e sintaxe adequadas.',
+          ),
+          q(
+            id: 57,
+            title: 'Faz cálculo de soma e subtração até 5.',
+            material: 'Não necessário.',
+            procedure: 'Aplicar três problemas simples de adição e subtração.',
+            scoreRule: '1 ponto com 3 respostas corretas.',
+          ),
+          q(
+            id: 58,
+            title: 'Identifica e nomeia letras.',
+            material: 'Manual de Figuras, página 37.',
+            procedure: 'Apontar letras e pedir nome/som.',
+            scoreRule: '1 ponto quando identifica 22 letras (96%).',
           ),
         ],
       ),
