@@ -229,7 +229,7 @@ class ReportPage extends StatelessWidget {
         child: Center(
           child: ConstrainedBox(
             constraints: const BoxConstraints(maxWidth: 1100),
-            child: Padding(
+            child: SingleChildScrollView(
               padding: const EdgeInsets.all(16),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -321,112 +321,111 @@ class ReportPage extends StatelessWidget {
                     ],
                   ),
                   const SizedBox(height: 14),
-                  Expanded(
-                    child: Card(
-                      elevation: 2,
-                      color: theme.brightness == Brightness.dark
-                          ? colorScheme.surfaceContainerLow
-                          : Colors.white.withAlpha((0.94 * 255).round()),
-                      surfaceTintColor: Colors.transparent,
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(12),
-                      ),
-                      clipBehavior: Clip.antiAlias,
-                      child: Column(
-                        children: [
-                          Container(
-                            width: double.infinity,
-                            padding: const EdgeInsets.symmetric(
-                              horizontal: 14,
-                              vertical: 10,
-                            ),
-                            color: colorScheme.primaryContainer,
-                            child: Text(
-                              'Pacientes e quantidade de protocolos',
-                              style: TextStyle(
-                                color: colorScheme.onPrimaryContainer,
-                                fontWeight: FontWeight.bold,
-                              ),
+                  Card(
+                    elevation: 2,
+                    color: theme.brightness == Brightness.dark
+                        ? colorScheme.surfaceContainerLow
+                        : Colors.white.withAlpha((0.94 * 255).round()),
+                    surfaceTintColor: Colors.transparent,
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                    clipBehavior: Clip.antiAlias,
+                    child: Column(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Container(
+                          width: double.infinity,
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 14,
+                            vertical: 10,
+                          ),
+                          color: colorScheme.primaryContainer,
+                          child: Text(
+                            'Pacientes e quantidade de protocolos',
+                            style: TextStyle(
+                              color: colorScheme.onPrimaryContainer,
+                              fontWeight: FontWeight.bold,
                             ),
                           ),
-                          Expanded(
-                            child: fichas.isEmpty
-                                ? Center(
-                                    child: Text(
-                                      'Nenhum paciente cadastrado até o momento.',
+                        ),
+                        fichas.isEmpty
+                            ? Padding(
+                                padding: const EdgeInsets.all(24),
+                                child: Center(
+                                  child: Text(
+                                    'Nenhum paciente cadastrado até o momento.',
+                                    style: TextStyle(
+                                      color: colorScheme.onSurfaceVariant,
+                                    ),
+                                  ),
+                                ),
+                              )
+                            : ListView.separated(
+                                shrinkWrap: true,
+                                physics: const NeverScrollableScrollPhysics(),
+                                padding: const EdgeInsets.all(12),
+                                itemCount: fichas.length,
+                                separatorBuilder: (_, index) => const Divider(),
+                                itemBuilder: (context, index) {
+                                  final ficha = fichas[index];
+                                  final quantidade =
+                                      protocolosPorPaciente[ficha.id] ?? 0;
+                                  return ListTile(
+                                    leading: CircleAvatar(
+                                      backgroundColor:
+                                          colorScheme.secondaryContainer,
+                                      foregroundColor:
+                                          colorScheme.onSecondaryContainer,
+                                      child: Text(
+                                        '${index + 1}',
+                                        style: const TextStyle(
+                                          fontWeight: FontWeight.bold,
+                                        ),
+                                      ),
+                                    ),
+                                    title: Text(
+                                      ficha.nomeCrianca,
+                                      style: TextStyle(
+                                        color: colorScheme.onSurface,
+                                        fontWeight: FontWeight.w600,
+                                      ),
+                                    ),
+                                    subtitle: Text(
+                                      'Última atualização: ${ficha.savedAt.toLocal().toString().substring(0, 16)}',
                                       style: TextStyle(
                                         color: colorScheme.onSurfaceVariant,
                                       ),
                                     ),
-                                  )
-                                : ListView.separated(
-                                    padding: const EdgeInsets.all(12),
-                                    itemCount: fichas.length,
-                                    separatorBuilder: (_, index) =>
-                                        const Divider(),
-                                    itemBuilder: (context, index) {
-                                      final ficha = fichas[index];
-                                      final quantidade =
-                                          protocolosPorPaciente[ficha.id] ?? 0;
-                                      return ListTile(
-                                        leading: CircleAvatar(
-                                          backgroundColor:
-                                              colorScheme.secondaryContainer,
-                                          foregroundColor:
-                                              colorScheme.onSecondaryContainer,
-                                          child: Text(
-                                            '${index + 1}',
-                                            style: const TextStyle(
-                                              fontWeight: FontWeight.bold,
-                                            ),
-                                          ),
+                                    trailing: Container(
+                                      padding: const EdgeInsets.symmetric(
+                                        horizontal: 10,
+                                        vertical: 6,
+                                      ),
+                                      decoration: BoxDecoration(
+                                        color: quantidade > 0
+                                            ? colorScheme.tertiaryContainer
+                                            : colorScheme.errorContainer,
+                                        borderRadius: BorderRadius.circular(
+                                          999,
                                         ),
-                                        title: Text(
-                                          ficha.nomeCrianca,
-                                          style: TextStyle(
-                                            color: colorScheme.onSurface,
-                                            fontWeight: FontWeight.w600,
-                                          ),
+                                      ),
+                                      child: Text(
+                                        quantidade > 0
+                                            ? '$quantidade protocolo(s)'
+                                            : 'Sem protocolo',
+                                        style: TextStyle(
+                                          color: quantidade > 0
+                                              ? colorScheme.onTertiaryContainer
+                                              : colorScheme.onErrorContainer,
+                                          fontWeight: FontWeight.w600,
                                         ),
-                                        subtitle: Text(
-                                          'Última atualização: ${ficha.savedAt.toLocal().toString().substring(0, 16)}',
-                                          style: TextStyle(
-                                            color: colorScheme.onSurfaceVariant,
-                                          ),
-                                        ),
-                                        trailing: Container(
-                                          padding: const EdgeInsets.symmetric(
-                                            horizontal: 10,
-                                            vertical: 6,
-                                          ),
-                                          decoration: BoxDecoration(
-                                            color: quantidade > 0
-                                                ? colorScheme.tertiaryContainer
-                                                : colorScheme.errorContainer,
-                                            borderRadius: BorderRadius.circular(
-                                              999,
-                                            ),
-                                          ),
-                                          child: Text(
-                                            quantidade > 0
-                                                ? '$quantidade protocolo(s)'
-                                                : 'Sem protocolo',
-                                            style: TextStyle(
-                                              color: quantidade > 0
-                                                  ? colorScheme
-                                                        .onTertiaryContainer
-                                                  : colorScheme
-                                                        .onErrorContainer,
-                                              fontWeight: FontWeight.w600,
-                                            ),
-                                          ),
-                                        ),
-                                      );
-                                    },
-                                  ),
-                          ),
-                        ],
-                      ),
+                                      ),
+                                    ),
+                                  );
+                                },
+                              ),
+                      ],
                     ),
                   ),
                 ],
