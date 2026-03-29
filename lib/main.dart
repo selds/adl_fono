@@ -15,6 +15,7 @@ import 'package:adl_fono/services/auth_service.dart';
 import 'package:adl_fono/services/theme_service.dart';
 import 'package:adl_fono/widgets/session_guard.dart';
 import 'package:firebase_core/firebase_core.dart';
+import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter/material.dart';
 
 void main() async {
@@ -67,6 +68,18 @@ class _MainAppState extends State<MainApp> {
       theme: ThemeData(
         colorScheme: ColorScheme.fromSeed(seedColor: Colors.blue),
         useMaterial3: true,
+        pageTransitionsTheme: kIsWeb
+            ? const PageTransitionsTheme(
+                builders: {
+                  TargetPlatform.android: _FadePageTransitionsBuilder(),
+                  TargetPlatform.iOS: _FadePageTransitionsBuilder(),
+                  TargetPlatform.macOS: _FadePageTransitionsBuilder(),
+                  TargetPlatform.linux: _FadePageTransitionsBuilder(),
+                  TargetPlatform.windows: _FadePageTransitionsBuilder(),
+                  TargetPlatform.fuchsia: _FadePageTransitionsBuilder(),
+                },
+              )
+            : const PageTransitionsTheme(),
       ),
       darkTheme: ThemeData(
         colorScheme: ColorScheme.fromSeed(
@@ -74,6 +87,18 @@ class _MainAppState extends State<MainApp> {
           brightness: Brightness.dark,
         ),
         useMaterial3: true,
+        pageTransitionsTheme: kIsWeb
+            ? const PageTransitionsTheme(
+                builders: {
+                  TargetPlatform.android: _FadePageTransitionsBuilder(),
+                  TargetPlatform.iOS: _FadePageTransitionsBuilder(),
+                  TargetPlatform.macOS: _FadePageTransitionsBuilder(),
+                  TargetPlatform.linux: _FadePageTransitionsBuilder(),
+                  TargetPlatform.windows: _FadePageTransitionsBuilder(),
+                  TargetPlatform.fuchsia: _FadePageTransitionsBuilder(),
+                },
+              )
+            : const PageTransitionsTheme(),
       ),
       themeMode: _themeMode,
       initialRoute: '/login',
@@ -192,5 +217,21 @@ class _MainAppState extends State<MainApp> {
         ),
       ),
     );
+  }
+}
+
+/// Transição de página rápida (fade simples) para melhor desempenho no Web.
+class _FadePageTransitionsBuilder extends PageTransitionsBuilder {
+  const _FadePageTransitionsBuilder();
+
+  @override
+  Widget buildTransitions<T>(
+    PageRoute<T> route,
+    BuildContext context,
+    Animation<double> animation,
+    Animation<double> secondaryAnimation,
+    Widget child,
+  ) {
+    return FadeTransition(opacity: animation, child: child);
   }
 }
