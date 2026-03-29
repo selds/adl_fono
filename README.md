@@ -1,95 +1,56 @@
 # ADL Fonoaudiologia
 
-Um aplicativo Flutter para gerenciamento de fichas de pacientes em fonoaudiologia, desenvolvido para a Fonoaudiologia.
+[![Deploy Flutter Web](https://github.com/selds/adl_fono/actions/workflows/deploy.yml/badge.svg)](https://github.com/selds/adl_fono/actions/workflows/deploy.yml)
+[![Flutter](https://img.shields.io/badge/Flutter-3.41.5-blue?logo=flutter)](https://flutter.dev)
+[![Firebase](https://img.shields.io/badge/Firebase-Firestore%20%2B%20Auth-orange?logo=firebase)](https://firebase.google.com)
+[![Plataformas](https://img.shields.io/badge/Plataformas-Web%20%7C%20Android%20%7C%20iOS-green)](https://flutter.dev/multi-platform)
+[![Licença](https://img.shields.io/github/license/selds/adl_fono)](LICENSE)
+[![Último commit](https://img.shields.io/github/last-commit/selds/adl_fono)](https://github.com/selds/adl_fono/commits/main)
+[![Versão](https://img.shields.io/badge/vers%C3%A3o-0.1.0-informational)](pubspec.yaml)
 
-## Descrição
-
-Este aplicativo permite o cadastro, edição e visualização de fichas de pacientes, incluindo dados pessoais, diagnósticos, avaliações e acompanhamento. Os dados são persistidos localmente e organizados em um histórico acessível.
+Aplicativo Flutter para avaliação e acompanhamento do desenvolvimento da linguagem (ADL-2) por fonoaudiólogos. Permite cadastrar pacientes, aplicar o protocolo ADL completo com cálculo automático de escores e gerar relatórios.
 
 ## Funcionalidades
 
-- **Cadastro de Pacientes**: Formulário completo para inserir dados do paciente, incluindo nome, data de nascimento, sexo, diagnóstico, responsável, data da avaliação, avaliador, especialidade, atividades, ambiente familiar e demanda familiar.
-- **Cálculo de Idade**: Exibe a idade atual do paciente baseada na data de nascimento (em anos ou meses).
-- **Histórico**: Visualização de todos os registros salvos, agrupados por nome da criança, com busca por nome.
-- **Edição e Exclusão**: Edite registros via swipe para a direita ou exclua com confirmação via swipe para a esquerda.
-- **Persistência de Dados**: Os dados são salvos localmente usando SharedPreferences, sobrevivendo a reinicializações do app.
-- **Interface Intuitiva**: Design moderno com Material Design, campos de data editáveis e seletor de calendário.
+- **Anamnese**: Cadastro completo do paciente (dados pessoais, diagnóstico, avaliador, ambiente familiar).
+- **Protocolo ADL**: Aplicação do protocolo ADL-2 com seções de Linguagem Compreensiva e Expressiva, agrupadas por faixa etária.
+- **Cálculo dos Escores**: Ponto de partida por idade cronológica, base (5 acertos consecutivos), teto (5 erros consecutivos) e escore bruto — tudo calculado automaticamente.
+- **Histórico**: Consulta dos protocolos por paciente com resultado dos escores (LR, LE, LG).
+- **Relatórios**: Exportação em CSV e PDF com resumo de atendimentos.
+- **Gerenciamento de usuários**: Painel admin para controle de acesso por papel (`admin` / `fonoaudiologo`).
+- **Tema claro/escuro**: Salvo por preferência do dispositivo.
 
-## Tecnologias Utilizadas
+## Tecnologias
 
-- **Flutter**: Framework para desenvolvimento de apps multiplataforma.
-- **Dart**: Linguagem de programação.
-- **SharedPreferences**: Para persistência local de dados.
-- **UUID**: Para identificação única de registros.
-- **Intl**: Para formatação de datas.
-- **Mask Text Input Formatter**: Para formatação de entrada em campos de data.
+| Camada | Tecnologia |
+|---|---|
+| Framework | Flutter (Dart) |
+| Backend / Auth | Firebase Authentication |
+| Banco de dados | Cloud Firestore |
+| Armazenamento | Firebase Storage |
+| Deploy Web | GitHub Pages (Actions) |
 
-## Instalação
+## Instalação local
 
-1. Certifique-se de ter o Flutter instalado: [Instalação do Flutter](https://flutter.dev/docs/get-started/install).
-2. Clone o repositório:
-   ```
-   git clone <url-do-repositorio>
-   cd adl_fono
-   ```
-3. Instale as dependências:
-   ```
-   flutter pub get
-   ```
-4. Execute o app:
-   ```
-   flutter run
-   ```
+```bash
+git clone https://github.com/selds/adl_fono.git
+cd adl_fono
+flutter pub get
+flutter run
+```
 
-## Uso
+> Requer as variáveis do Firebase configuradas via `--dart-define` ou arquivo `.env`. Consulte [DEPLOY.md](DEPLOY.md) para detalhes de produção.
 
-- **Tela Principal**: Preencha o formulário e clique em "Salvar" para adicionar um novo registro. Os campos são limpos automaticamente após salvar.
-- **Histórico**: Acesse via o menu para visualizar, buscar, editar ou excluir registros.
-- **Perfil**: Página simples com informações do usuário (placeholder).
+## Administração
 
-## Administração de Usuários
+O primeiro admin deve ser definido manualmente no Firebase Console:
 
-- O acesso à tela de gerenciamento de usuários depende do campo `role` no documento do usuário em `users/{uid}` no Firestore.
-- Valores aceitos para `role`:
-   - `admin`
-   - `fonoaudiologo`
-- Para promover um usuário existente para admin:
-   - Abra o Firebase Console.
-   - Vá em Firestore Database > coleção `users`.
-   - Encontre o documento do usuário (UID do Firebase Auth).
-   - Atualize o campo `role` para `admin`.
-   - Faça logout/login no app para atualizar o estado local.
+1. Firestore → coleção `users` → documento `{uid}` → campo `role = admin`
+2. Faça logout/login no app para atualizar o estado.
 
-### Regras de segurança (Firestore)
-
-- Arquivo de regras: `firestore.rules`
-- Deploy das regras:
-   ```bash
-   firebase deploy --only firestore:rules
-   ```
-- As regras atuais garantem:
-   - Apenas `admin` pode alterar `role` e `isActive` de outros usuários.
-   - Usuário comum não consegue se auto-promover para `admin`.
-   - Leitura de perfis limitada ao próprio usuário e admins.
-
-### Bootstrap do primeiro admin
-
-- Em projeto novo, defina manualmente o primeiro admin no Firebase Console (Firestore > `users/{uid}` > `role = admin`).
-- Depois disso, admins podem gerenciar os demais usuários pela interface.
-
-## Estrutura do Projeto
-
-- `lib/main.dart`: Ponto de entrada e navegação.
-- `lib/adl.dart`: Tela principal do formulário.
-- `lib/history_page.dart`: Tela de histórico.
-- `lib/profile_page.dart`: Tela de perfil.
-- `lib/models/paciente_ficha.dart`: Modelo de dados e repositório.
-
-## Contribuição
-
-Contribuições são bem-vindas! Abra issues ou pull requests para melhorias.
+A partir daí, admins podem gerenciar outros usuários pela interface do app.
 
 ## Licença
 
-Este projeto está licenciado sob a MIT License - veja o arquivo [LICENSE](LICENSE) para detalhes.
+[MIT](LICENSE)
 
