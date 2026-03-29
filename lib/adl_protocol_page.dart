@@ -22,8 +22,6 @@ class _AdlProtocolPageState extends State<AdlProtocolPage> {
   int? _idadeCronologicaMeses;
   int _suggestedCompreensivaStartIndex = 0;
   int _suggestedExpressivaStartIndex = 0;
-  bool _showFab = true;
-  double _lastScrollOffset = 0;
 
   final Map<String, bool?> _answers = <String, bool?>{};
   final Map<String, TextEditingController> _notesControllers =
@@ -76,7 +74,6 @@ class _AdlProtocolPageState extends State<AdlProtocolPage> {
     _expressiveGroups = _buildExpressiveGroups();
     _loadPacienteName();
     _loadExistingAnswers();
-    _scrollController.addListener(_handleFabVisibilityOnScroll);
   }
 
   void _loadPacienteName() {
@@ -180,7 +177,6 @@ class _AdlProtocolPageState extends State<AdlProtocolPage> {
 
   @override
   void dispose() {
-    _scrollController.removeListener(_handleFabVisibilityOnScroll);
     _scrollController.dispose();
     for (final controller in _notesControllers.values) {
       controller.dispose();
@@ -192,27 +188,6 @@ class _AdlProtocolPageState extends State<AdlProtocolPage> {
     _lePadraoController.dispose();
     _lgPadraoController.dispose();
     super.dispose();
-  }
-
-  void _handleFabVisibilityOnScroll() {
-    if (!_scrollController.hasClients) return;
-
-    final currentOffset = _scrollController.offset;
-    final delta = currentOffset - _lastScrollOffset;
-
-    if (currentOffset <= 4) {
-      if (!_showFab) setState(() => _showFab = true);
-      _lastScrollOffset = currentOffset;
-      return;
-    }
-
-    if (delta > 8 && _showFab) {
-      setState(() => _showFab = false);
-    } else if (delta < -8 && !_showFab) {
-      setState(() => _showFab = true);
-    }
-
-    _lastScrollOffset = currentOffset;
   }
 
   String _answerKey(int questionId, String itemId) =>
@@ -560,6 +535,17 @@ class _AdlProtocolPageState extends State<AdlProtocolPage> {
         return;
       }
       setState(() => _selectedExpressiveGroupIndex += 1);
+    }
+    _scrollToTop();
+  }
+
+  void _goPrevGroup() {
+    if (_selectedSection == _AdlSection.compreensiva) {
+      if (_selectedGroupIndex <= 0) return;
+      setState(() => _selectedGroupIndex -= 1);
+    } else {
+      if (_selectedExpressiveGroupIndex <= 0) return;
+      setState(() => _selectedExpressiveGroupIndex -= 1);
     }
     _scrollToTop();
   }
@@ -1242,13 +1228,18 @@ class _AdlProtocolPageState extends State<AdlProtocolPage> {
       segments: const [
         ButtonSegment<_AdlSection>(
           value: _AdlSection.compreensiva,
-          label: Text('2. LINGUAGEM COMPREENSIVA'),
+          label: Text('2. Compreensiva'),
           icon: Icon(Icons.hearing_outlined),
         ),
         ButtonSegment<_AdlSection>(
           value: _AdlSection.expressiva,
-          label: Text('3. LINGUAGEM EXPRESSIVA'),
+          label: Text('3. Expressiva'),
           icon: Icon(Icons.record_voice_over_outlined),
+        ),
+        ButtonSegment<_AdlSection>(
+          value: _AdlSection.escores,
+          label: Text('4. Escores'),
+          icon: Icon(Icons.calculate_outlined),
         ),
       ],
       selected: {_selectedSection},
@@ -1299,48 +1290,6 @@ class _AdlProtocolPageState extends State<AdlProtocolPage> {
         });
         _scrollToTop();
       },
-    );
-  }
-
-  Widget _buildActionButtons() {
-    final groups = _selectedSection == _AdlSection.compreensiva
-        ? _groups
-        : _expressiveGroups;
-    final selectedIndex = _selectedSection == _AdlSection.compreensiva
-        ? _selectedGroupIndex
-        : _selectedExpressiveGroupIndex;
-    final isLast = selectedIndex == groups.length - 1;
-
-    return Wrap(
-      spacing: 8,
-      runSpacing: 8,
-      children: [
-        SizedBox(
-          height: 40,
-          child: OutlinedButton.icon(
-            onPressed: _onSaveDraft,
-            icon: const Icon(Icons.save_outlined, size: 18),
-            label: const Text('Salvar'),
-            style: OutlinedButton.styleFrom(minimumSize: const Size(120, 40)),
-          ),
-        ),
-        SizedBox(
-          height: 40,
-          child: ElevatedButton.icon(
-            onPressed: isLast
-                ? (_selectedSection == _AdlSection.compreensiva
-                      ? _onFinishComprehensive
-                      : _onFinishExpressive)
-                : _goNextGroup,
-            icon: Icon(
-              isLast ? Icons.check_circle_outline : Icons.navigate_next,
-              size: 18,
-            ),
-            label: Text(isLast ? 'Concluir' : 'Avançar'),
-            style: ElevatedButton.styleFrom(minimumSize: const Size(120, 40)),
-          ),
-        ),
-      ],
     );
   }
 
@@ -1730,142 +1679,6 @@ class _AdlProtocolPageState extends State<AdlProtocolPage> {
     );
   }
 
-  Future<void> _openQuickActionsMenu() async {
-    final groups = _selectedSection == _AdlSection.compreensiva
-        ? _groups
-        : _expressiveGroups;
-    final selectedIndex = _selectedSection == _AdlSection.compreensiva
-        ? _selectedGroupIndex
-        : _selectedExpressiveGroupIndex;
-    final isLast = selectedIndex == groups.length - 1;
-
-    await showModalBottomSheet<void>(
-      context: context,
-      showDragHandle: true,
-      builder: (context) {
-        return SafeArea(
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              ListTile(
-                leading: const Icon(Icons.menu_book_outlined),
-                title: const Text('Índice de faixas'),
-                onTap: () async {
-                  Navigator.of(context).pop();
-                  await _openBandsMenu();
-                },
-              ),
-              ListTile(
-                leading: const Icon(Icons.save_outlined),
-                title: const Text('Salvar rascunho'),
-                onTap: () async {
-                  Navigator.of(context).pop();
-                  await _onSaveDraft();
-                },
-              ),
-              ListTile(
-                leading: Icon(
-                  isLast ? Icons.check_circle_outline : Icons.navigate_next,
-                ),
-                title: Text(isLast ? 'Concluir' : 'Avançar faixa'),
-                onTap: () async {
-                  Navigator.of(context).pop();
-                  if (isLast) {
-                    if (_selectedSection == _AdlSection.compreensiva) {
-                      await _onFinishComprehensive();
-                    } else {
-                      await _onFinishExpressive();
-                    }
-                  } else {
-                    _goNextGroup();
-                  }
-                },
-              ),
-            ],
-          ),
-        );
-      },
-    );
-  }
-
-  Future<void> _openBandsMenu() async {
-    await showModalBottomSheet<void>(
-      context: context,
-      isScrollControlled: true,
-      showDragHandle: true,
-      builder: (context) {
-        return SafeArea(
-          child: SizedBox(
-            height: MediaQuery.of(context).size.height * 0.72,
-            child: Column(
-              children: [
-                ListTile(
-                  title: const Text('Ir para faixa etária'),
-                  subtitle: const Text('Selecione uma faixa para navegar'),
-                ),
-                const Divider(height: 1),
-                Expanded(
-                  child: ListView.separated(
-                    itemCount: _selectedSection == _AdlSection.compreensiva
-                        ? _groups.length
-                        : _expressiveGroups.length,
-                    separatorBuilder: (_, _) => const Divider(height: 1),
-                    itemBuilder: (context, index) {
-                      final groups =
-                          _selectedSection == _AdlSection.compreensiva
-                          ? _groups
-                          : _expressiveGroups;
-                      final group = groups[index];
-                      final selectedIndex =
-                          _selectedSection == _AdlSection.compreensiva
-                          ? _selectedGroupIndex
-                          : _selectedExpressiveGroupIndex;
-                      final isSelected = index == selectedIndex;
-                      final isCompleted =
-                          _selectedSection == _AdlSection.compreensiva
-                          ? _isCurrentGroupCompleted(group)
-                          : _isCurrentExpressiveGroupCompleted(group);
-
-                      return ListTile(
-                        selected: isSelected,
-                        leading: CircleAvatar(
-                          radius: 14,
-                          child: Text('${index + 1}'),
-                        ),
-                        title: Text(group.label),
-                        subtitle: Text(
-                          'Pontuação: ${_selectedSection == _AdlSection.compreensiva ? _groupScore(group) : group.questions.fold<int>(0, (total, question) => total + _expressivaQuestionScore(question))}/${group.questions.length}',
-                        ),
-                        trailing: isSelected
-                            ? const Icon(Icons.check_circle)
-                            : Icon(
-                                isCompleted
-                                    ? Icons.task_alt
-                                    : Icons.radio_button_unchecked,
-                              ),
-                        onTap: () {
-                          setState(() {
-                            if (_selectedSection == _AdlSection.compreensiva) {
-                              _selectedGroupIndex = index;
-                            } else {
-                              _selectedExpressiveGroupIndex = index;
-                            }
-                          });
-                          Navigator.of(context).pop();
-                          _scrollToTop();
-                        },
-                      );
-                    },
-                  ),
-                ),
-              ],
-            ),
-          ),
-        );
-      },
-    );
-  }
-
   Widget _buildScrollableFormContent() {
     return SingleChildScrollView(
       controller: _scrollController,
@@ -1873,19 +1686,22 @@ class _AdlProtocolPageState extends State<AdlProtocolPage> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
-          _buildHeader(),
-          const SizedBox(height: 16),
+          if (_selectedSection != _AdlSection.escores) ...[
+            _buildHeader(),
+            const SizedBox(height: 16),
+          ],
           _buildSectionSelector(),
           const SizedBox(height: 16),
-          _buildActionButtons(),
-          const SizedBox(height: 16),
-          _buildBandPicker(),
-          const SizedBox(height: 12),
-          _buildBandsProgressStrip(),
-          const SizedBox(height: 12),
-          _buildGroupView(),
-          _buildProcessRulesCard(),
-          _buildScoresSummaryCard(),
+          if (_selectedSection == _AdlSection.escores) ...[
+            _buildProcessRulesCard(),
+            _buildScoresSummaryCard(),
+          ] else ...[
+            _buildBandPicker(),
+            const SizedBox(height: 12),
+            _buildBandsProgressStrip(),
+            const SizedBox(height: 12),
+            _buildGroupView(),
+          ],
         ],
       ),
     );
@@ -1894,9 +1710,17 @@ class _AdlProtocolPageState extends State<AdlProtocolPage> {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    final colorScheme = Theme.of(context).colorScheme;
     final primaryGradient = _primaryGradientFor(theme.brightness);
     final backgroundGradient = _backgroundGradientFor(theme.brightness);
+
+    final navGroups = _selectedSection == _AdlSection.compreensiva
+        ? _groups
+        : _expressiveGroups;
+    final navIndex = _selectedSection == _AdlSection.compreensiva
+        ? _selectedGroupIndex
+        : _selectedExpressiveGroupIndex;
+    final isFirst = navIndex == 0;
+    final isLast = navIndex == navGroups.length - 1;
 
     return Scaffold(
       backgroundColor: Colors.transparent,
@@ -1910,40 +1734,31 @@ class _AdlProtocolPageState extends State<AdlProtocolPage> {
           decoration: BoxDecoration(gradient: primaryGradient),
         ),
         actions: [
+          if (_selectedSection != _AdlSection.escores) ...[
+            IconButton(
+              tooltip: 'Faixa anterior',
+              onPressed: isFirst ? null : _goPrevGroup,
+              icon: const Icon(Icons.navigate_before),
+            ),
+            IconButton(
+              tooltip: isLast ? 'Concluir' : 'Próxima faixa',
+              onPressed: isLast
+                  ? (_selectedSection == _AdlSection.compreensiva
+                        ? _onFinishComprehensive
+                        : _onFinishExpressive)
+                  : _goNextGroup,
+              icon: Icon(
+                isLast ? Icons.check_circle_outline : Icons.navigate_next,
+              ),
+            ),
+          ],
           IconButton(
-            tooltip: 'Ir para faixa',
-            onPressed: _openBandsMenu,
-            icon: const Icon(Icons.menu_book_outlined),
-          ),
-          IconButton(
-            tooltip: 'Ações',
-            onPressed: _openQuickActionsMenu,
-            icon: const Icon(Icons.tune),
+            tooltip: 'Salvar',
+            onPressed: _onSaveDraft,
+            icon: const Icon(Icons.save_outlined),
           ),
         ],
       ),
-      floatingActionButton: AnimatedSlide(
-        offset: _showFab ? Offset.zero : const Offset(0, 2.2),
-        duration: const Duration(milliseconds: 180),
-        curve: Curves.easeOut,
-        child: AnimatedOpacity(
-          opacity: _showFab ? 1 : 0,
-          duration: const Duration(milliseconds: 180),
-          curve: Curves.easeOut,
-          child: FloatingActionButton(
-            onPressed: _openQuickActionsMenu,
-            mini: true,
-            tooltip: '',
-            elevation: 0,
-            backgroundColor: colorScheme.surfaceContainerHighest.withValues(
-              alpha: 0.78,
-            ),
-            foregroundColor: colorScheme.onSurfaceVariant,
-            child: const Icon(Icons.tune, size: 17),
-          ),
-        ),
-      ),
-      floatingActionButtonLocation: FloatingActionButtonLocation.endFloat,
       body: SafeArea(
         child: Container(
           decoration: BoxDecoration(gradient: backgroundGradient),
@@ -3423,4 +3238,4 @@ class _ScaleMetrics {
   final int maxWrongStreak;
 }
 
-enum _AdlSection { compreensiva, expressiva }
+enum _AdlSection { compreensiva, expressiva, escores }
