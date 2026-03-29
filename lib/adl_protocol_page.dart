@@ -19,6 +19,9 @@ class _AdlProtocolPageState extends State<AdlProtocolPage> {
   late final List<_AdlAgeGroup> _groups;
   late final List<_AdlAgeGroup> _expressiveGroups;
   late String _nomeCrianca;
+  int? _idadeCronologicaMeses;
+  int _suggestedCompreensivaStartIndex = 0;
+  int _suggestedExpressivaStartIndex = 0;
   bool _showFab = true;
   double _lastScrollOffset = 0;
 
@@ -28,6 +31,9 @@ class _AdlProtocolPageState extends State<AdlProtocolPage> {
   final Map<String, bool?> _expressiveAnswers = <String, bool?>{};
   final Map<String, TextEditingController> _expressiveNotesControllers =
       <String, TextEditingController>{};
+  final TextEditingController _lrPadraoController = TextEditingController();
+  final TextEditingController _lePadraoController = TextEditingController();
+  final TextEditingController _lgPadraoController = TextEditingController();
 
   int _selectedGroupIndex = 0;
   int _selectedExpressiveGroupIndex = 0;
@@ -68,8 +74,8 @@ class _AdlProtocolPageState extends State<AdlProtocolPage> {
     super.initState();
     _groups = _buildComprehensiveGroups();
     _expressiveGroups = _buildExpressiveGroups();
-    _loadExistingAnswers();
     _loadPacienteName();
+    _loadExistingAnswers();
     _scrollController.addListener(_handleFabVisibilityOnScroll);
   }
 
@@ -78,15 +84,68 @@ class _AdlProtocolPageState extends State<AdlProtocolPage> {
       final fichas = FichaRepository.all;
       final ficha = fichas.firstWhere((f) => f.id == widget.pacienteId);
       _nomeCrianca = ficha.nomeCrianca;
+      final nascimento = _tryParseDateBr(ficha.dataNascimento);
+      final avaliacao = _tryParseDateBr(ficha.dataAvaliacao) ?? DateTime.now();
+      if (nascimento != null) {
+        _idadeCronologicaMeses = _ageInMonths(nascimento, avaliacao);
+      }
+      _suggestedCompreensivaStartIndex = _suggestedStartIndex(_groups);
+      _suggestedExpressivaStartIndex = _suggestedStartIndex(_expressiveGroups);
     } catch (e) {
       _nomeCrianca = 'Paciente';
+      _suggestedCompreensivaStartIndex = 0;
+      _suggestedExpressivaStartIndex = 0;
     }
+  }
+
+  DateTime? _tryParseDateBr(String value) {
+    final parts = value.trim().split('/');
+    if (parts.length != 3) return null;
+    final day = int.tryParse(parts[0]);
+    final month = int.tryParse(parts[1]);
+    final year = int.tryParse(parts[2]);
+    if (day == null || month == null || year == null) return null;
+    try {
+      return DateTime(year, month, day);
+    } catch (_) {
+      return null;
+    }
+  }
+
+  int _ageInMonths(DateTime birthDate, DateTime referenceDate) {
+    int months =
+        (referenceDate.year - birthDate.year) * 12 +
+        (referenceDate.month - birthDate.month);
+    if (referenceDate.day < birthDate.day) {
+      months -= 1;
+    }
+    return months < 0 ? 0 : months;
+  }
+
+  int _suggestedStartIndex(List<_AdlAgeGroup> groups) {
+    if (_idadeCronologicaMeses == null) return 0;
+    final targetMonths = (_idadeCronologicaMeses! - 6).clamp(12, 83);
+    final index = ((targetMonths - 12) / 6).floor();
+    if (index < 0) return 0;
+    if (index >= groups.length) return groups.length - 1;
+    return index;
   }
 
   void _loadExistingAnswers() {
     final receptive = widget.protocol?.receptiveAnswers ?? <String, dynamic>{};
     final expressive =
         widget.protocol?.expressiveAnswers ?? <String, dynamic>{};
+
+    _selectedGroupIndex =
+        (receptive['lcCurrentBandIndex'] as int?) ??
+        _suggestedCompreensivaStartIndex;
+    _selectedExpressiveGroupIndex =
+        (expressive['leCurrentBandIndex'] as int?) ??
+        _suggestedExpressivaStartIndex;
+
+    _lrPadraoController.text = (receptive['lcStandardScore'] as String?) ?? '';
+    _lePadraoController.text = (expressive['leStandardScore'] as String?) ?? '';
+    _lgPadraoController.text = (receptive['lgStandardScore'] as String?) ?? '';
 
     for (final group in _groups) {
       for (final question in group.questions) {
@@ -129,6 +188,9 @@ class _AdlProtocolPageState extends State<AdlProtocolPage> {
     for (final controller in _expressiveNotesControllers.values) {
       controller.dispose();
     }
+    _lrPadraoController.dispose();
+    _lePadraoController.dispose();
+    _lgPadraoController.dispose();
     super.dispose();
   }
 
@@ -243,11 +305,111 @@ class _AdlProtocolPageState extends State<AdlProtocolPage> {
     return true;
   }
 
-  bool get _allComprehensiveCompleted {
-    for (final group in _groups) {
-      if (!_isCurrentGroupCompleted(group)) return false;
+  bool _isQuestionAnswered({
+    required _AdlQuestion question,
+    required bool isExpressive,
+  }) {
+    for (final item in question.items) {
+      final key = isExpressive
+          ? _expAnswerKey(question.id, item.id)
+          : _answerKey(question.id, item.id);
+      final value = isExpressive ? _expressiveAnswers[key] : _answers[key];
+      if (value == null) return false;
     }
     return true;
+  }
+
+  bool _isQuestionCorrect({
+    required _AdlQuestion question,
+    required bool isExpressive,
+  }) {
+    if (!_isQuestionAnswered(question: question, isExpressive: isExpressive)) {
+      return false;
+    }
+    return isExpressive
+        ? _expressivaQuestionScore(question) == 1
+        : _questionScore(question) == 1;
+  }
+
+  _ScaleMetrics _computeScaleMetrics({
+    required List<_AdlAgeGroup> groups,
+    required bool isExpressive,
+    required int startIndex,
+  }) {
+    final questions = groups.expand((group) => group.questions).toList()
+      ..sort((a, b) => a.id.compareTo(b.id));
+
+    if (questions.isEmpty) return const _ScaleMetrics();
+
+    final safeStartIndex = startIndex.clamp(0, groups.length - 1);
+    final startTask = groups[safeStartIndex].questions.first.id;
+
+    final answeredIds = <int>{};
+    final correctIds = <int>{};
+
+    for (final question in questions) {
+      if (_isQuestionAnswered(question: question, isExpressive: isExpressive)) {
+        answeredIds.add(question.id);
+        if (_isQuestionCorrect(
+          question: question,
+          isExpressive: isExpressive,
+        )) {
+          correctIds.add(question.id);
+        }
+      }
+    }
+
+    final wrongIds = answeredIds.difference(correctIds).toList()..sort();
+    final lastCorrectTask = correctIds.isEmpty
+        ? 0
+        : (correctIds.toList()..sort()).last;
+    final totalWrong = wrongIds.length;
+    final rawScore = lastCorrectTask <= 0
+        ? 0
+        : (lastCorrectTask - totalWrong).clamp(0, 999);
+
+    int wrongStreak = 0;
+    int maxWrongStreak = 0;
+    int? previousWrongId;
+    for (final id in wrongIds) {
+      if (previousWrongId != null && id == previousWrongId + 1) {
+        wrongStreak += 1;
+      } else {
+        wrongStreak = 1;
+      }
+      if (wrongStreak > maxWrongStreak) {
+        maxWrongStreak = wrongStreak;
+      }
+      previousWrongId = id;
+    }
+
+    int baseStreak = 0;
+    var baseEstablished = false;
+    final minTaskId = questions.first.id;
+    for (int id = startTask; id >= minTaskId; id--) {
+      if (!answeredIds.contains(id)) {
+        continue;
+      }
+      if (correctIds.contains(id)) {
+        baseStreak += 1;
+        if (baseStreak >= 5) {
+          baseEstablished = true;
+          break;
+        }
+      } else {
+        baseStreak = 0;
+      }
+    }
+
+    return _ScaleMetrics(
+      startTask: startTask,
+      lastCorrectTask: lastCorrectTask,
+      totalWrong: totalWrong,
+      rawScore: rawScore,
+      baseEstablished: baseEstablished,
+      ceilingReached: maxWrongStreak >= 5,
+      maxWrongStreak: maxWrongStreak,
+    );
   }
 
   Future<void> _saveProtocol({required bool completedComprehensive}) async {
@@ -260,15 +422,37 @@ class _AdlProtocolPageState extends State<AdlProtocolPage> {
       widget.protocol?.expressiveAnswers ?? {},
     );
 
+    final receptiveMetrics = _computeScaleMetrics(
+      groups: _groups,
+      isExpressive: false,
+      startIndex: _suggestedCompreensivaStartIndex,
+    );
+    final expressiveMetrics = _computeScaleMetrics(
+      groups: _expressiveGroups,
+      isExpressive: true,
+      startIndex: _suggestedExpressivaStartIndex,
+    );
+
     final receptiveAnswers = <String, dynamic>{
       ...previousReceptive,
-      'lcCompleted': completedComprehensive,
+      'lcCompleted': completedComprehensive
+          ? true
+          : (previousReceptive['lcCompleted'] as bool? ?? false),
       'lcCompletedAt': completedComprehensive
           ? DateTime.now().toIso8601String()
           : previousReceptive['lcCompletedAt'],
       'lcCurrentBandIndex': _selectedGroupIndex,
       'lcTotal': _comprehensiveTotal,
       'lcMaxTotal': _maxComprehensiveTotal,
+      'lcSuggestedStartBandIndex': _suggestedCompreensivaStartIndex,
+      'lcLastCorrectTask': receptiveMetrics.lastCorrectTask,
+      'lcWrongTotal': receptiveMetrics.totalWrong,
+      'lcRawScore': receptiveMetrics.rawScore,
+      'lcBaseEstablished': receptiveMetrics.baseEstablished,
+      'lcCeilingReached': receptiveMetrics.ceilingReached,
+      'lcStandardScore': _lrPadraoController.text.trim(),
+      'lgRawScore': receptiveMetrics.rawScore + expressiveMetrics.rawScore,
+      'lgStandardScore': _lgPadraoController.text.trim(),
     };
 
     for (final group in _groups) {
@@ -294,6 +478,13 @@ class _AdlProtocolPageState extends State<AdlProtocolPage> {
       'leCurrentBandIndex': _selectedExpressiveGroupIndex,
       'leTotal': _expressivaTotal,
       'leMaxTotal': _maxExpressivaTotal,
+      'leSuggestedStartBandIndex': _suggestedExpressivaStartIndex,
+      'leLastCorrectTask': expressiveMetrics.lastCorrectTask,
+      'leWrongTotal': expressiveMetrics.totalWrong,
+      'leRawScore': expressiveMetrics.rawScore,
+      'leBaseEstablished': expressiveMetrics.baseEstablished,
+      'leCeilingReached': expressiveMetrics.ceilingReached,
+      'leStandardScore': _lePadraoController.text.trim(),
     };
 
     for (final group in _expressiveGroups) {
@@ -330,61 +521,23 @@ class _AdlProtocolPageState extends State<AdlProtocolPage> {
   }
 
   Future<void> _onFinishComprehensive() async {
-    if (!_allComprehensiveCompleted) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text(
-            'Responda todos os itens da linguagem compreensiva antes de concluir.',
-          ),
-        ),
-      );
-      return;
-    }
-
     await _saveProtocol(completedComprehensive: true);
     if (!mounted) return;
-
-    final result = await showDialog<bool>(
-      context: context,
-      builder: (context) => AlertDialog(
-        title: const Text('Linguagem compreensiva concluída'),
-        content: const Text(
-          'As respostas da parte compreensiva foram salvas. Deseja seguir para a linguagem expressiva agora?',
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.of(context).pop(false),
-            child: const Text('Depois'),
-          ),
-          ElevatedButton(
-            onPressed: () => Navigator.of(context).pop(true),
-            child: const Text('Ir para expressiva'),
-          ),
-        ],
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(
+        content: Text('Escala de linguagem compreensiva concluída.'),
       ),
     );
+  }
 
+  Future<void> _onFinishExpressive() async {
+    await _saveProtocol(completedComprehensive: false);
     if (!mounted) return;
-
-    if (result == true) {
-      try {
-        Navigator.of(context).pushNamed(
-          '/adl-expressiva',
-          arguments: {
-            'pacienteId': widget.pacienteId,
-            'protocolId': widget.protocol?.id,
-          },
-        );
-      } catch (_) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text(
-              'Etapa de linguagem expressiva ainda não está disponível nesta versão.',
-            ),
-          ),
-        );
-      }
-    }
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(
+        content: Text('Escala de linguagem expressiva concluída.'),
+      ),
+    );
   }
 
   Future<void> _onSaveDraft() async {
@@ -1177,7 +1330,7 @@ class _AdlProtocolPageState extends State<AdlProtocolPage> {
             onPressed: isLast
                 ? (_selectedSection == _AdlSection.compreensiva
                       ? _onFinishComprehensive
-                      : _onSaveDraft)
+                      : _onFinishExpressive)
                 : _goNextGroup,
             icon: Icon(
               isLast ? Icons.check_circle_outline : Icons.navigate_next,
@@ -1245,6 +1398,338 @@ class _AdlProtocolPageState extends State<AdlProtocolPage> {
     );
   }
 
+  int? _parseStandardScore(String value) {
+    final normalized = value.trim();
+    if (normalized.isEmpty) return null;
+    return int.tryParse(normalized);
+  }
+
+  Widget _buildProcessRulesCard() {
+    final metrics = _selectedSection == _AdlSection.compreensiva
+        ? _computeScaleMetrics(
+            groups: _groups,
+            isExpressive: false,
+            startIndex: _suggestedCompreensivaStartIndex,
+          )
+        : _computeScaleMetrics(
+            groups: _expressiveGroups,
+            isExpressive: true,
+            startIndex: _suggestedExpressivaStartIndex,
+          );
+    final suggestedStartIndex = _selectedSection == _AdlSection.compreensiva
+        ? _suggestedCompreensivaStartIndex
+        : _suggestedExpressivaStartIndex;
+    final groups = _selectedSection == _AdlSection.compreensiva
+        ? _groups
+        : _expressiveGroups;
+    final colorScheme = Theme.of(context).colorScheme;
+
+    Widget statusChip({required String label, required bool ok}) {
+      return Container(
+        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+        decoration: BoxDecoration(
+          color: ok
+              ? colorScheme.primaryContainer
+              : colorScheme.surfaceContainerHighest,
+          borderRadius: BorderRadius.circular(20),
+          border: Border.all(
+            color: ok ? colorScheme.primary : colorScheme.outlineVariant,
+          ),
+        ),
+        child: Text(
+          label,
+          style: TextStyle(
+            fontSize: 12,
+            fontWeight: FontWeight.w700,
+            color: ok
+                ? colorScheme.onPrimaryContainer
+                : colorScheme.onSurfaceVariant,
+          ),
+        ),
+      );
+    }
+
+    return Card(
+      margin: const EdgeInsets.only(top: 12),
+      elevation: 1,
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+      child: Padding(
+        padding: const EdgeInsets.all(14),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              children: [
+                Icon(
+                  Icons.rule_folder_outlined,
+                  size: 18,
+                  color: colorScheme.primary,
+                ),
+                const SizedBox(width: 8),
+                Text(
+                  'Regras da Escala',
+                  style: TextStyle(
+                    fontWeight: FontWeight.w700,
+                    color: colorScheme.onSurface,
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: 10),
+            Container(
+              width: double.infinity,
+              padding: const EdgeInsets.all(10),
+              decoration: BoxDecoration(
+                color: colorScheme.surfaceContainerHighest,
+                borderRadius: BorderRadius.circular(10),
+                border: Border.all(color: colorScheme.outlineVariant),
+              ),
+              child: Text(
+                'Ponto de partida sugerido (idade - 6 meses): ${suggestedStartIndex + 1}. ${groups[suggestedStartIndex].label}',
+                style: TextStyle(color: colorScheme.onSurface),
+              ),
+            ),
+            const SizedBox(height: 8),
+            Wrap(
+              spacing: 8,
+              runSpacing: 8,
+              children: [
+                statusChip(
+                  label: metrics.baseEstablished
+                      ? 'Base: estabelecida'
+                      : 'Base: não estabelecida',
+                  ok: metrics.baseEstablished,
+                ),
+                statusChip(
+                  label: metrics.ceilingReached
+                      ? 'Teto: atingido'
+                      : 'Teto: não atingido',
+                  ok: metrics.ceilingReached,
+                ),
+              ],
+            ),
+            const SizedBox(height: 10),
+            Align(
+              alignment: Alignment.centerLeft,
+              child: OutlinedButton.icon(
+                onPressed: () {
+                  setState(() {
+                    if (_selectedSection == _AdlSection.compreensiva) {
+                      _selectedGroupIndex = _suggestedCompreensivaStartIndex;
+                    } else {
+                      _selectedExpressiveGroupIndex =
+                          _suggestedExpressivaStartIndex;
+                    }
+                  });
+                  _scrollToTop();
+                },
+                icon: const Icon(Icons.my_location_outlined, size: 18),
+                label: const Text('Ir para ponto de partida'),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildScoresSummaryCard() {
+    final receptive = _computeScaleMetrics(
+      groups: _groups,
+      isExpressive: false,
+      startIndex: _suggestedCompreensivaStartIndex,
+    );
+    final expressive = _computeScaleMetrics(
+      groups: _expressiveGroups,
+      isExpressive: true,
+      startIndex: _suggestedExpressivaStartIndex,
+    );
+
+    final globalRaw = receptive.rawScore + expressive.rawScore;
+    final lrPadrao = _parseStandardScore(_lrPadraoController.text);
+    final lePadrao = _parseStandardScore(_lePadraoController.text);
+    final lgPadrao = _parseStandardScore(_lgPadraoController.text);
+    final colorScheme = Theme.of(context).colorScheme;
+
+    Widget sectionBlock({
+      required String title,
+      required List<Widget> children,
+    }) {
+      return Container(
+        margin: const EdgeInsets.only(bottom: 12),
+        padding: const EdgeInsets.all(12),
+        decoration: BoxDecoration(
+          color: colorScheme.surfaceContainerHighest,
+          borderRadius: BorderRadius.circular(10),
+          border: Border.all(color: colorScheme.outlineVariant),
+        ),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              title,
+              style: TextStyle(
+                fontWeight: FontWeight.w700,
+                color: colorScheme.onSurface,
+              ),
+            ),
+            const SizedBox(height: 8),
+            ...children,
+          ],
+        ),
+      );
+    }
+
+    Widget metricRow(String label, String value) {
+      return Padding(
+        padding: const EdgeInsets.symmetric(vertical: 3),
+        child: Row(
+          children: [
+            Expanded(
+              child: Text(
+                label,
+                style: TextStyle(color: colorScheme.onSurfaceVariant),
+              ),
+            ),
+            const SizedBox(width: 12),
+            Container(
+              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+              decoration: BoxDecoration(
+                color: colorScheme.surface,
+                borderRadius: BorderRadius.circular(14),
+                border: Border.all(color: colorScheme.outlineVariant),
+              ),
+              child: Text(
+                value,
+                style: TextStyle(
+                  fontWeight: FontWeight.w700,
+                  color: colorScheme.onSurface,
+                ),
+              ),
+            ),
+          ],
+        ),
+      );
+    }
+
+    return Card(
+      margin: const EdgeInsets.only(top: 16),
+      elevation: 1,
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+      child: Padding(
+        padding: const EdgeInsets.all(14),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            Row(
+              children: [
+                Icon(
+                  Icons.analytics_outlined,
+                  size: 18,
+                  color: colorScheme.primary,
+                ),
+                const SizedBox(width: 8),
+                Text(
+                  'Cálculo dos Escores',
+                  style: TextStyle(
+                    fontWeight: FontWeight.w800,
+                    color: colorScheme.onSurface,
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: 10),
+            sectionBlock(
+              title: 'Linguagem Receptiva',
+              children: [
+                metricRow(
+                  'Última tarefa correta',
+                  '${receptive.lastCorrectTask}',
+                ),
+                metricRow(
+                  'Menos total de respostas incorretas',
+                  '-${receptive.totalWrong}',
+                ),
+                metricRow('Escore Bruto LR', '${receptive.rawScore}'),
+                const SizedBox(height: 6),
+                TextFormField(
+                  controller: _lrPadraoController,
+                  keyboardType: TextInputType.number,
+                  decoration: InputDecoration(
+                    labelText: 'Escore Padrão LR (manual do ADL)',
+                    border: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(8),
+                    ),
+                    isDense: true,
+                    filled: true,
+                    fillColor: colorScheme.surface,
+                  ),
+                ),
+              ],
+            ),
+            sectionBlock(
+              title: 'Linguagem Expressiva',
+              children: [
+                metricRow(
+                  'Última tarefa correta',
+                  '${expressive.lastCorrectTask}',
+                ),
+                metricRow(
+                  'Menos total de respostas incorretas',
+                  '-${expressive.totalWrong}',
+                ),
+                metricRow('Escore Bruto LE', '${expressive.rawScore}'),
+                const SizedBox(height: 6),
+                TextFormField(
+                  controller: _lePadraoController,
+                  keyboardType: TextInputType.number,
+                  decoration: InputDecoration(
+                    labelText: 'Escore Padrão LE (manual do ADL)',
+                    border: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(8),
+                    ),
+                    isDense: true,
+                    filled: true,
+                    fillColor: colorScheme.surface,
+                  ),
+                ),
+              ],
+            ),
+            sectionBlock(
+              title: 'Linguagem Global',
+              children: [
+                metricRow('Escore Bruto da Linguagem Global', '$globalRaw'),
+                const SizedBox(height: 6),
+                TextFormField(
+                  controller: _lgPadraoController,
+                  keyboardType: TextInputType.number,
+                  decoration: InputDecoration(
+                    labelText: 'Escore Padrão da Linguagem Global',
+                    border: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(8),
+                    ),
+                    isDense: true,
+                    filled: true,
+                    fillColor: colorScheme.surface,
+                  ),
+                ),
+              ],
+            ),
+            Text(
+              'Padrões preenchidos: LR=${lrPadrao ?? '-'} | LE=${lePadrao ?? '-'} | LG=${lgPadrao ?? '-'}',
+              textAlign: TextAlign.center,
+              style: TextStyle(
+                fontSize: 12,
+                color: colorScheme.onSurfaceVariant,
+                fontWeight: FontWeight.w600,
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
   Future<void> _openQuickActionsMenu() async {
     final groups = _selectedSection == _AdlSection.compreensiva
         ? _groups
@@ -1289,7 +1774,7 @@ class _AdlProtocolPageState extends State<AdlProtocolPage> {
                     if (_selectedSection == _AdlSection.compreensiva) {
                       await _onFinishComprehensive();
                     } else {
-                      await _onSaveDraft();
+                      await _onFinishExpressive();
                     }
                   } else {
                     _goNextGroup();
@@ -1399,6 +1884,8 @@ class _AdlProtocolPageState extends State<AdlProtocolPage> {
           _buildBandsProgressStrip(),
           const SizedBox(height: 12),
           _buildGroupView(),
+          _buildProcessRulesCard(),
+          _buildScoresSummaryCard(),
         ],
       ),
     );
@@ -2914,6 +3401,26 @@ class _AdlQuestionItem {
 
   final String id;
   final String label;
+}
+
+class _ScaleMetrics {
+  const _ScaleMetrics({
+    this.startTask = 0,
+    this.lastCorrectTask = 0,
+    this.totalWrong = 0,
+    this.rawScore = 0,
+    this.baseEstablished = false,
+    this.ceilingReached = false,
+    this.maxWrongStreak = 0,
+  });
+
+  final int startTask;
+  final int lastCorrectTask;
+  final int totalWrong;
+  final int rawScore;
+  final bool baseEstablished;
+  final bool ceilingReached;
+  final int maxWrongStreak;
 }
 
 enum _AdlSection { compreensiva, expressiva }
