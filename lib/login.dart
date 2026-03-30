@@ -15,6 +15,7 @@ class _LoginScreenState extends State<LoginScreen> {
   final _formKey = GlobalKey<FormState>();
   final _emailController = TextEditingController();
   final _passwordController = TextEditingController();
+  bool _obscurePassword = true;
   bool _isLoading = false;
 
   @override
@@ -194,7 +195,7 @@ class _LoginScreenState extends State<LoginScreen> {
 
                                 TextFormField(
                                   controller: _passwordController,
-                                  obscureText: true,
+                                  obscureText: _obscurePassword,
                                   style: const TextStyle(color: Colors.white),
                                   decoration: InputDecoration(
                                     labelText: 'Insira sua senha',
@@ -204,6 +205,22 @@ class _LoginScreenState extends State<LoginScreen> {
                                     prefixIcon: const Icon(
                                       Icons.lock,
                                       color: Colors.white70,
+                                    ),
+                                    suffixIcon: IconButton(
+                                      onPressed: () {
+                                        setState(() {
+                                          _obscurePassword = !_obscurePassword;
+                                        });
+                                      },
+                                      icon: Icon(
+                                        _obscurePassword
+                                            ? Icons.visibility
+                                            : Icons.visibility_off,
+                                        color: Colors.white70,
+                                      ),
+                                      tooltip: _obscurePassword
+                                          ? 'Mostrar senha'
+                                          : 'Ocultar senha',
                                     ),
                                     border: OutlineInputBorder(
                                       borderRadius: BorderRadius.circular(12.0),
