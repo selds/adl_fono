@@ -216,7 +216,7 @@ class _LoginScreenState extends State<LoginScreen> {
                                         _obscurePassword
                                             ? Icons.visibility
                                             : Icons.visibility_off,
-                                        color: Colors.white70,
+                                        color: Colors.white,
                                       ),
                                       tooltip: _obscurePassword
                                           ? 'Mostrar senha'
