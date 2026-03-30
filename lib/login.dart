@@ -206,21 +206,37 @@ class _LoginScreenState extends State<LoginScreen> {
                                       Icons.lock,
                                       color: Colors.white70,
                                     ),
-                                    suffixIcon: IconButton(
-                                      onPressed: () {
-                                        setState(() {
-                                          _obscurePassword = !_obscurePassword;
-                                        });
-                                      },
-                                      icon: Icon(
-                                        _obscurePassword
-                                            ? Icons.visibility
-                                            : Icons.visibility_off,
-                                        color: Colors.white,
+                                    suffixIcon: Tooltip(
+                                      message: 'Espiar a senha',
+                                      child: GestureDetector(
+                                        onTapDown: (_) {
+                                          setState(
+                                            () => _obscurePassword = false,
+                                          );
+                                        },
+                                        onTapUp: (_) {
+                                          setState(
+                                            () => _obscurePassword = true,
+                                          );
+                                        },
+                                        onTapCancel: () {
+                                          setState(
+                                            () => _obscurePassword = true,
+                                          );
+                                        },
+                                        child: MouseRegion(
+                                          cursor: SystemMouseCursors.click,
+                                          child: Padding(
+                                            padding: const EdgeInsets.all(12.0),
+                                            child: Icon(
+                                              _obscurePassword
+                                                  ? Icons.visibility
+                                                  : Icons.visibility_off,
+                                              color: Colors.white,
+                                            ),
+                                          ),
+                                        ),
                                       ),
-                                      tooltip: _obscurePassword
-                                          ? 'Mostrar senha'
-                                          : 'Ocultar senha',
                                     ),
                                     border: OutlineInputBorder(
                                       borderRadius: BorderRadius.circular(12.0),
