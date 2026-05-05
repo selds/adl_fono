@@ -13,7 +13,7 @@
 
 ---
 
-> Aplicativo Flutter para avaliação e acompanhamento do desenvolvimento da linguagem (ADL-2) por fonoaudiólogos.  
+> Aplicativo Flutter para avaliação e acompanhamento do desenvolvimento da linguagem (ADL-2) por fonoaudiólogos.
 > Cadastro de pacientes, aplicação do protocolo ADL completo com cálculo automático de escores e geração de relatórios.
 
 </div>
@@ -34,23 +34,50 @@
 
 ---
 
-## 🛠️ Tecnologias
+## 🏗️ Arquitetura
 
+```text
+┌─────────────────┬──────────────────────────────┐
+│ Camada       │ Tecnologia                    │
+├─────────────────┼──────────────────────────────┤
+│ Frontend     │ Flutter Web / Android / iOS   │
+├─────────────────┼──────────────────────────────┤
+│ Autenticação │ Firebase Authentication        │
+├─────────────────┼──────────────────────────────┤
+│ Banco        │ Cloud Firestore               │
+├─────────────────┼──────────────────────────────┤
+│ Arquivos     │ Firebase Storage              │
+├─────────────────┼──────────────────────────────┤
+│ Deploy Web   │ GitHub Pages (via Actions)    │
+└─────────────────┴──────────────────────────────┘
 ```
-┌───────────────────────────────────────────────┐
-│               ADL Fonoaudiologia                │
-├───────────────┬───────────────────────────────┤
-│   Frontend    │   Flutter Web / Android / iOS  │
-├───────────────┼───────────────────────────────┤
-│   Auth        │   Firebase Authentication      │
-├───────────────┼───────────────────────────────┤
-│   Banco       │   Cloud Firestore               │
-├───────────────┼───────────────────────────────┤
-│   Arquivos    │   Firebase Storage              │
-├───────────────┼───────────────────────────────┤
-│   Deploy Web  │   GitHub Pages (via Actions)   │
-└───────────────┴───────────────────────────────┘
+
+---
+
+## 📂 Estrutura do Projeto
+
+```text
+adl_fono/
+├── lib/                   # Código Flutter (frontend)
+├── assets/                # Assets estáticos (imagens, fontes)
+├── icons/                 # Ícones do app
+├── android/               # Configurações Android
+├── ios/                   # Configurações iOS
+├── web/                   # Configurações Flutter Web
+├── .github/workflows/     # CI/CD (GitHub Actions)
+├── DEPLOY.md              # Guia de deploy e configuração
+├── LICENSE
+└── README.md
 ```
+
+---
+
+## ✅ Requisitos
+
+- **Flutter 3.41.5+**
+- **Dart 3.x**
+- Projeto configurado no **Firebase** (Firestore, Authentication, Storage)
+- **Node.js** (opcional, para ferramentas de deploy)
 
 ---
 
@@ -68,8 +95,24 @@ flutter pub get
 flutter run
 ```
 
-> **Atenção**: Requer as variáveis do Firebase configuradas via `--dart-define` ou arquivo `.env`.  
+> **Atenção**: Requer as variáveis do Firebase configuradas via `--dart-define` ou arquivo `.env`.
 > Consulte o [DEPLOY.md](DEPLOY.md) para detalhes completos de configuração de produção.
+
+---
+
+## ⚙️ Variáveis de Ambiente
+
+As configurações do Firebase são passadas via `--dart-define` no build:
+
+```bash
+flutter build web \
+  --dart-define=FIREBASE_API_KEY=sua_chave \
+  --dart-define=FIREBASE_AUTH_DOMAIN=seu_projeto.firebaseapp.com \
+  --dart-define=FIREBASE_PROJECT_ID=seu_projeto \
+  --dart-define=FIREBASE_STORAGE_BUCKET=seu_projeto.appspot.com \
+  --dart-define=FIREBASE_MESSAGING_SENDER_ID=123456789 \
+  --dart-define=FIREBASE_APP_ID=1:123456789:web:abc123
+```
 
 ---
 
@@ -77,7 +120,7 @@ flutter run
 
 O primeiro admin deve ser configurado manualmente no Firebase Console:
 
-```
+```text
 1. Firestore Console
    └── coleção: users
        └── documento: {uid}
@@ -90,21 +133,17 @@ A partir daí, admins podem gerenciar outros usuários diretamente pela interfac
 
 ---
 
-## 📁 Estrutura do Projeto
+## 🚀 Deploy
+
+O deploy web é feito automaticamente via **GitHub Actions** ao fazer push na branch `main`.
+
+O app é publicado no **GitHub Pages**:
 
 ```
-adl_fono/
-├── lib/               # Código Flutter (frontend)
-├── assets/            # Assets estáticos (ícones, imagens)
-├── icons/             # Ícones do app
-├── android/           # Configurações Android
-├── ios/               # Configurações iOS
-├── web/               # Configurações Flutter Web
-├── .github/workflows/ # CI/CD (GitHub Actions)
-├── DEPLOY.md          # Guia de deploy e configuração
-├── LICENSE
-└── README.md
+https://selds.github.io/adl_fono/
 ```
+
+Para detalhes completos de configuração, consulte o [DEPLOY.md](DEPLOY.md).
 
 ---
 
@@ -116,6 +155,8 @@ Distribuído sob a licença **GPL-3.0**. Consulte o arquivo [LICENSE](LICENSE) p
 
 <div align="center">
 
-Feito com ❤️ para a área de **Fonoaudiologia** &nbsp;|&nbsp; Stack: Flutter · Firebase · GitHub Pages
+Feito com ❤️ para a área de **Fonoaudiologia**
+
+Stack: Flutter · Firebase · GitHub Pages
 
 </div>
